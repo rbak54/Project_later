@@ -1,0 +1,94 @@
+\documentclass[11pt]{article}
+\usepackage{setspace}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[a4paper,top=2cm,bottom=2cm,left=2cm,right=2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable} %
+\usepackage[caption = false]{subfig}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage[style=authoryear,backend=biber]{biblatex}
+\usepackage{lineno}
+\usepackage{csquotes}% Recommended
+\linespread{1.5}
+\newcommand{\HRule}{\rule{\linewidth}{1mm}}
+\addbibresource{references.bib}% Syntax for version >= 1.2
+\usepackage{pgfgantt}
+
+\begin{document}
+% title
+\title{Mechanistic Modelling of COVID-19 and Climate}%
+\author{Ruth Keane}
+
+\begin{titlepage}
+\includegraphics[width=8cm]{logo.eps}\\[1cm] 
+\center 
+\textsc{\LARGE Masters Thesis}\\[1.5cm] 
+\textsc{\Large Imperial College London}\\[0.5cm]
+\textsc{\large Life Sciences}\\[0.5cm] 
+\makeatletter
+\HRule \\[0.4cm]
+{ \huge \bfseries \@title}\\[0.4cm] % Title of your document
+\HRule \\[1.5cm]
+
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Author:}\\
+\@author % Your name
+\end{flushleft}
+\end{minipage}
+~
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Supervisors:} \\
+Dr Samraat Pawar \\[1.2em] % Supervisor's Name
+Dr Michael Tristem\\[1.2em]
+\end{flushright}
+\end{minipage}\\[2cm]
+\makeatother
+
+{\large \today}\\[2cm] % Date, change the \today to a set date if you want to be precise0
+\vfill % Fill the rest of the page with whitespace
+\clearpage
+\end{titlepage}
+\tableofcontents
+\newpage
+\begin{abstract}
+\end{abstract}
+\linenumbers
+
+\section{Introduction}
+\subsection{Infectious Disease Models}
+\subsubsection{SEIR models} %how much of basics?
+\subsubsection{Examples}
+\subsubsection{How can Infectious Disease Models be used}
+\subsubsection{Adding Complexity}
+\subsection{Climate in Infectious Disease Models}
+\subsubsection{Phenomenological Methods including Time Series Analysis}
+\subsubsection{Findings of Phenomenological Methods}
+\subsubsection{Mechanistic Models incorporating Climates}
+\subsubsection{Findings of Mechanistic Models}
+\subsubsection{Virology and mechanism for these findings}
+\subsection{COVID-19 Models}
+\subsubsection{Properties of SARS-COV-2}
+\subsubsection{Epidemiological Properties of COVID-19}
+\subsubsection{What have Models included and what have they found}
+\subsection{Climate in COVID disease models}
+\subsubsection{MaxEnt and Statistical models}
+\subsubsection{Mechanistic models}
+What has been done so far?
+What is missing?
+\section{Methods}
+\section{Results}
+\section{Discussion}
+\section{Conclusion}
+39 bears
+\clearpage{}
+\printbibliography
+
+
+\end{document}
