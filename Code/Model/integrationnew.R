@@ -29,8 +29,8 @@ integration_general<-function(parms,sims,time){
   }
   
   extra_cols<-9
-  model_means=matrix(ncol =7)
-  names(model_means)<-c("country","week","mismatch","meanI","meanR0","meantemp","combination")
+  model_means=matrix(ncol =11)
+  names(model_means)<-c("country","week","mismatch","meanI","varI","meanR0","varR0","meantemp","vartemp","combination")
   parms_temp<-parms
   parms_temp[["sigma"]]<-NA
   parms_temp[["h"]]<-NA
@@ -71,7 +71,7 @@ integration_general<-function(parms,sims,time){
            temp<-cbind(temp,temp_extra)
             temp<-as_tibble(temp)
            #model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I),meanR0=mean(R0),meantemp=mean(temperature),.groups="drop")
-           model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),meanR0=mean(R0),meantemp=mean(temperature),.groups="drop")
+           model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),varR0=var(R0),meantemp=mean(temperature),vartemp=var(temperature),.groups="drop")
            
                  #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meantemp")
       #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meantemp")
@@ -105,7 +105,8 @@ integration_general<-function(parms,sims,time){
           temp_extra[,"country"]<-location_index
           RH<-cbind(RH,temp_extra)
           RH<-as_tibble(RH)
-          model_means_temp<- RH %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I),meanR0=mean(R0),meanRH=mean(relative_humidity),.groups="drop")
+          model_means_temp<- RH %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I),varI=var(I/(S+E+I+R)),meanR0=mean(R0),
+                                                                                              meanRH=mean(RH),varR0=var(R0),.groups="keep")
           #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
           #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
           

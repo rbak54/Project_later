@@ -20,15 +20,16 @@ bests <- bests %>% summarise(best=mismatch[which.max(mean_corr)],.groups="keep")
 integration_general<-function(parms,sims,time){
   Y<-make_lhs(n=sims,parms = parms)
   write.csv(Y,"../../Data/latincube.csv")
-  extra_cols<-9
-  model_means=matrix(ncol =7)
-  names(model_means)<-c("country","week","mismatch","meanI","meanR0","meantemp","combination")
+  extra_cols<-10
+  model_means=matrix(ncol =8)
+  names(model_means)<-c("country","week","mismatch","meanI","meanR0","meantemp","combination","shift")
   parms_temp<-parms
   parms_temp[["sigma"]]<-NA
   parms_temp[["h"]]<-NA
   parms_temp[["mu"]]<-NA
   parms_temp[["f"]]<-NA
   parms_temp[["N"]]<-NA
+  for(shift in 0:4){
   for (combination in 1:nrow(Y)){
     parms_temp[["sigma"]]<-Y$sigma[combination]
     parms_temp[["h"]]<-Y$h[combination]
@@ -42,10 +43,12 @@ integration_general<-function(parms,sims,time){
                 R = 0*parms_temp[["N"]])
       if(parms[["climate_label"]]=="Temperature"){
         peak_contact_seq<-seq(data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"],length.out=5)
+        peak_contact_seq_long<-rep(peak_contact_seq,5)
         mismatch=(peak_contact_seq-data_wider_means_summ[location_index,"minT"])/(data_wider_means_summ[location_index,"maxT"]-data_wider_means_summ[location_index,"minT"])
         mismatch<-round(mismatch,2)
         flu_mismatch<-bests$best[which(bests$country==data_wider_means_summ$country[location_index])]
-        i=peak_contact_seq[which(mismatch==flu_mismatch)]
+
+                i=peak_contact_seq_long[which(mismatch==flu_mismatch)+shift]
         # c(data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"])
         #difference between temperature where contact rate is highest and lowest temperature in range (i.e virus does best survivasl or virus does best contact)
         #mismatch= 0 is when contact rate is highest at low temp
@@ -54,11 +57,12 @@ integration_general<-function(parms,sims,time){
         #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
         mismatch<-round(mismatch,2)
         temp = ode(    y = start,    time = time,    func = SEIR_model,    parms = parms_temp)
-        png(paste0("../../Results/Plots/model_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
-        plottime(temp)
-        graphics.off()
-        temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"],data_wider_means_summ[location_index,"peakT"],mismatch,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
-        colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","temperature","R0","week","combination")
+        #png(paste0("../../Results/Plots/model_series/covid/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
+        #plottime(temp)
+        #graphics.off()
+        filling_vec<-c(location_index,data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"],data_wider_means_summ[location_index,"peakT"],mismatch,NA,NA,NA,combination,shift)
+        temp_extra<-matrix(rep(filling_vec,nrow(temp)),nrow=nrow(temp),ncol=length(filling_vec),byrow=T)
+        colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","temperature","R0","week","combination","shift")
         temp_extra[,"temperature"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
         temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"temperature"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
         year<-ceiling((temp[,"time"])/365)
@@ -68,10 +72,11 @@ integration_general<-function(parms,sims,time){
         temp<-cbind(temp,temp_extra)
         temp<-as_tibble(temp)
         #model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I),meanR0=mean(R0),meantemp=mean(temperature),.groups="drop")
-        model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),meanR0=mean(R0),meantemp=mean(temperature),.groups="drop")
+        model_means_temp<- temp %>% group_by(country,week,mismatch,combination,shift) %>% summarise(meanI=mean(I/(S+E+I+R)),meanR0=mean(R0),meantemp=mean(temperature),.groups="drop")
         #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meantemp")
         #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meantemp")
         model_means<-bind_rows(model_means,model_means_temp)
+        }
         #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meantemp")
         #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meantemp")
         #png(paste0("../../Results/Plots/model_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
@@ -104,7 +109,7 @@ integration_general<-function(parms,sims,time){
         temp_extra[,"country"]<-location_index
         RH<-cbind(RH,temp_extra)
         RH<-as_tibble(RH)
-        model_means_temp<- RH %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I),meanR0=mean(R0),meanRH=mean(relative_humidity),.groups="drop")
+        model_means_temp<- RH %>% group_by(country,week,mismatch,combination,shift) %>% summarise(meanI=mean(I),meanR0=mean(R0),meanRH=mean(relative_humidity),.groups="drop")
         #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
         #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
         model_means<-bind_rows(model_means,model_means_temp)
@@ -128,7 +133,7 @@ parms = list( mu = 2.06e-5,sigma = 1/5 ,p = 0.01, gamma =1/21,f=0.05,
 sims=1
 model_means<-integration_general(parms,sims,time)
 
-write.csv(model_means,"../../Results/fromfunction/covid/1temperature.csv")
+write.csv(model_means,"../../Results/fromfunction/covid/1temperature_shift.csv")
 require(ggplot2)
 #sum_df<- as_tibble(model_means)  %>% group_by(country) %>% summarise(meansI=mean(meanI),meansR0=mean(meanR0)) 
 
