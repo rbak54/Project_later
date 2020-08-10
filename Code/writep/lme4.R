@@ -74,9 +74,13 @@ correlation_df$combination<-as.factor(correlation_df$combination)
 
 correlation_df$region<-cut(correlation_df$lat,breaks=c(min(correlation_df$lat)-1,-23.5,23.5,max(correlation_df$lat)+1), labels=c("Southern","Tropics","Northern"))
 a<-lmer(data=correlation_df,corsI~region*mismatch+(1|combination))
+a<-lmer(data=correlation_df,corsI~region*mismatch+(1|combination)+(0+region|combination))
+
 summary(a)
 AIC(a)
-
+hist(resid(a))
+plot(a)
+a<-lm(data=correlation_df,corsI~combination)
 a<-lm(data=correlation_df,corsI~region*mismatch)
 summary(a)
 AIC(a)
@@ -87,3 +91,12 @@ for(i in unique(correlation_df$region)){
   plot(as.factor(short$mismatch),short$corsI,ylim=c(-1,1))
 }
 #combine
+
+
+#lmer test
+#singular fit due to lCK OF EFFECT?
+mismatch<-c(1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5)
+combination<-c(1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4)
+corsI<-1*mismatch+combination
+a<-lmer(corsI~mismatch+(1|combination))
+summary(a)

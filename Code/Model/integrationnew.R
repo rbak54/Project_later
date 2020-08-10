@@ -94,18 +94,18 @@ integration_general<-function(parms,sims,time){
           mismatch=(i-parms_temp[["Climate_Variables"]][["range_C"]][1])/(parms_temp[["Climate_Variables"]][["range_C"]][2]-parms_temp[["Climate_Variables"]][["range_C"]][1])
           #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
           mismatch<-round(mismatch,2)
-          RH = ode(    y = start,    time = time,    func = SEIR_model,    parms = parms_temp)
-          temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minRH"],data_wider_means_summ[location_index,"maxRH"],data_wider_means_summ[location_index,"peakRH"],mismatch,NA,NA,NA,combination)),nrow=nrow(RH),ncol=extra_cols,byrow=T)
+          temp = ode(    y = start,    time = time,    func = SEIR_model,    parms = parms_temp)
+          temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minRH"],data_wider_means_summ[location_index,"maxRH"],data_wider_means_summ[location_index,"peakRH"],mismatch,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
           colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","relative_humidity","R0","week","combination")
-          temp_extra[,"relative_humidity"]<-Climate_Time_Function(time = time[1:nrow(RH)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
-          temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(RH)),"relative_humidity"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
-          year<-ceiling((RH[,"time"])/365)
-          day<-(RH[,"time"]-(year-1)*365)
+          temp_extra[,"relative_humidity"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
+          temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"relative_humidity"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
+          year<-ceiling((temp[,"time"])/365)
+          day<-(temp[,"time"]-(year-1)*365)
           temp_extra[,"week"]<-ceiling(day/7)
           temp_extra[,"country"]<-location_index
-          RH<-cbind(RH,temp_extra)
-          RH<-as_tibble(RH)
-          model_means_temp<- RH %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I),varI=var(I/(S+E+I+R)),meanR0=mean(R0),
+          temp<-cbind(temp,temp_extra)
+          temp<-as_tibble(temp)
+          model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),
                                                                                               meanRH=mean(RH),varR0=var(R0),.groups="keep")
           #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
           #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
@@ -118,7 +118,44 @@ integration_general<-function(parms,sims,time){
           #plottime(RH)
           #graphics.off()
         }
-      }
+    }
+          
+          
+          if(parms[["climate_label"]]=="AH"){
+            peak_contact_seq<-seq(data_wider_means_summ[location_index,"minAH"],data_wider_means_summ[location_index,"maxAH"],length.out=5)
+            for (i in peak_contact_seq){
+              #difference between Absolute_humidity where contact rate is highest and lowest Absolute_humidity in range (i.e virus does best survivasl or virus does best contact)
+              #mismatch= 0 is when contact rate is highest at low AH 
+              parms_temp[["Climate_Variables"]]= list(time_at_peak=data_wider_means_summ[location_index,"peakAH"]*7,range_C=c(data_wider_means_summ[location_index,"minAH"],data_wider_means_summ[location_index,"maxAH"]),Max_Climate_cr=i)
+              mismatch=(i-parms_temp[["Climate_Variables"]][["range_C"]][1])/(parms_temp[["Climate_Variables"]][["range_C"]][2]-parms_temp[["Climate_Variables"]][["range_C"]][1])
+              #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
+              mismatch<-round(mismatch,2)
+              temp = ode(    y = start,    time = time,    func = SEIR_model,    parms = parms_temp)
+              #png(paste0("../../Results/Plots/model_series/AH",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
+              #plottime(temp)
+              #graphics.off()
+              temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minAH"],data_wider_means_summ[location_index,"maxAH"],data_wider_means_summ[location_index,"peakAH"],mismatch,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
+              colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","AH","R0","week","combination")
+              temp_extra[,"AH"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
+              temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"AH"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
+              year<-ceiling((temp[,"time"])/365)
+              day<-(temp[,"time"]-(year-1)*365)
+              temp_extra[,"week"]<-ceiling(day/7)
+              temp_extra[,"country"]<-location_index
+              temp<-cbind(temp,temp_extra)
+              temp<-as_tibble(temp)
+              model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),
+                                                                                                  meanAH=mean(AH),varR0=var(R0),.groups="keep")
+              #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanAH")
+              #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanAH")
+              
+              model_means<-bind_rows(model_means,model_means_temp)
+              #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanAH")
+              #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanAH")
+              
+             
+            }
+          }
   }
   }
 model_means<-model_means[-1,]
@@ -143,6 +180,9 @@ correlation_function<-function(model_means,parms){
   if (parms[["climate_label"]]=="RH"){
     correlation_df <- correlation_df %>%  summarise(corsI=correlations(meanI,unique(country)),corsR=correlations(meanR0,unique(country)),maxs=max(meanRH),mins=min(meanRH),time_max=which.max(meanRH),means=mean(meanRH),.groups="keep")
   }
+  if (parms[["climate_label"]]=="AH"){
+    correlation_df <- correlation_df %>%  summarise(corsI=correlations(meanI,unique(country)),corsR=correlations(meanR0,unique(country)),maxs=max(meanAH),mins=min(meanAH),time_max=which.max(meanAH),means=mean(meanAH),.groups="keep")
+  }
   #correlation_df$mismatch<-as.factor(correlation_df$mismatch)
   #for (i in unique(correlation_df$combination)){
   #  png(paste0("../../Results/Plots/comboplots/",i,".png"))
@@ -166,15 +206,18 @@ correlation_function<-function(model_means,parms){
 }
 
 
-parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
-                   N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",extra="",
-                   g=0.085,q0=-9.079,Climate_Variables=NA)
+#parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
+ #                  N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",extra="",
+  #                 g=0.085,q0=-9.079,Climate_Variables=NA)
 #parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
  #          N = 1, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="RH",
   #        g=0.0209,q0=-21.98,Climate_Variables=NA)
-sims_range<-c(1, 5,10,20,40,80,160)
+parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
+              N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="AH",extra="",
+              g=0.062,q0=-30.162,Climate_Variables=NA)
+#sims_range<-c(1, 5,10,20,40,80,160)
 #sims_range<-c(5,10,20,40,80,160)
-sims_range<-c(5)
+sims_range<-c(1)
 #sims_range<-c(1)
 
 for (sss in sims_range){
@@ -225,6 +268,7 @@ graphics.off()
 }
 
 sims=160
+sims=1
 parms 
 # 
 # #using data to plot

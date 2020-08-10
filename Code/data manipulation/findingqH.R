@@ -24,8 +24,10 @@ formatted_data[,3]<-rep(as.vector(as.matrix((data[3,]))),each=7)
 colnames(formatted_data)<-c("Temp","Hum","Rep","Time","Viability","Experiment","q1","v0","q2","aic1","aic2")
 formatted_data
 
-formatted_data$AH<-c(rep(0.00193,7),rep(0.00410,7),rep(0.00659,7),rep(0.00414,7),rep(0.00691,7),rep(0.01007,7),rep(0.01283,7),rep(0.01599,7),rep(0.00677,7),rep(0.01693,7),rep(0.02742,7))
-
+#formatted_data$AH<-c(rep(0.00193,7),rep(0.00410,7),rep(0.00659,7),rep(0.00414,7),rep(0.00691,7),rep(0.01007,7),rep(0.01283,7),rep(0.01599,7),rep(0.00677,7),rep(0.01693,7),rep(0.02742,7))
+est0=6.11
+  lrv= 2256000/461.15
+formatted_data$AH<-est0*exp(lrv*((1/273.15)-(1/(formatted_data$Temp+273.15))))*formatted_data$Hum/100
 
 require("minpack.lm")
 
@@ -54,7 +56,7 @@ for (i in (unique(formatted_data$Experiment))){
 formatted_data
 shrunk_data<-formatted_data[seq(1,77,by=7),c(1,2,3,6,7,8,9,10,11,12)]
 #https://planetcalc.com/2167/
-shrunk_data
+
 #first model best for all but 1 eg so just use first model?
 par(mfrow=c(2,3))
 plot(shrunk_data$Temp,shrunk_data$q1)
@@ -105,11 +107,14 @@ g<-summary(AH_Model)$coefficients[1,1]
 q0<-summary(AH_Model)$coefficients[2,1]
 
 g 
+#0.06
 #73.00948
 q0
+#-30.162
 #-30.30238
 
 #plot(shrunk_data_repeats$AH,shrunk_data_repeats$q1)
 plot(AH,q0*exp(g*AH),"s")
 points(shrunk_data_repeats$AH,shrunk_data_repeats$q1)
 shrunk_data_repeats
+

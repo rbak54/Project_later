@@ -106,8 +106,8 @@ data_wider<-data_wider[which(data_wider$RH!="NaN"),]
 #convert to celcius
 data_wider$T<-(data_wider$T-32)*(5/9)
 #find weekly mean flu and temp over the years
-data_wider_means<-data_wider %>% group_by(country,week) %>% summarise(meanflu=mean(flu),meantemp=mean(T),.groups="keep")
-data_wider_means<-data_wider %>% group_by(country,week) %>% summarise(meanflu=mean(flu),meantemp=mean(T), meanRH=mean(RH), meanAH=mean(AH),.groups="keep")
+#data_wider_means<-data_wider %>% group_by(country,week) %>% summarise(meanflu=mean(flu),meantemp=mean(T),.groups="keep")
+data_wider_means<-data_wider %>% group_by(country,week) %>% summarise(meanflu=mean(flu),meantemp=mean(T), meanRH=mean(RH), meanAH=mean(AH),varflu=var(flu),vartemp=var(T),.groups="keep")
 
 #convert week to day
 data_wider_means$day<-(data_wider_means$week-1)*7+3.5
@@ -117,9 +117,8 @@ data_wider_means_summ<-data_wider_means %>% group_by(country) %>% summarise(minf
                             troughflu=week[which.min(meanflu)],minT=min(meantemp),maxT=max(meantemp),peakT=week[which.max(meantemp)], troughT=week[which.min(meantemp)],.groups="keep")
 data_wider_means_summ<-data_wider_means %>% group_by(country) %>% summarise(minflu=min(meanflu),maxflu=max(meanflu),peakflu=week[which.max(meanflu)],
                             troughflu=week[which.min(meanflu)],minT=min(meantemp),maxT=max(meantemp),peakT=week[which.max(meantemp)], troughT=week[which.min(meantemp)],minRH=min(meanRH),
-                            maxRH=max(meanRH),peakRH=week[which.max(meanRH)], troughRH=week[which.min(meanRH)]
-                            ,.groups="keep")
-                            #minAH=min(meanAH),maxAH=max(meanAH),peakAH=week[which.max(meanAH)], troughAH=week[which.min(meanAH)]
+                            maxRH=max(meanRH),peakRH=week[which.max(meanRH)], troughRH=week[which.min(meanRH)],meanvarflu=mean(varflu),meanvartemp=mean(vartemp), varvarflu=var(varflu), varvartemp=var(vartemp),
+                            minAH=min(meanAH),maxAH=max(meanAH),peakAH=week[which.max(meanAH)], troughAH=week[which.min(meanAH)],.groups="keep")
 
 # convert to data frame
 data_wider_means_summ<-as.data.frame(data_wider_means_summ)
@@ -128,8 +127,8 @@ data_wider_summ<-data_wider %>% group_by(country, year) %>% summarise(minflu=min
                                       troughflu=week[which.min(flu)],minT=min(T),maxT=max(T),peakT=week[which.max(T)], troughT=week[which.min(T)],.groups="keep")
 data_wider_summ<-data_wider %>% group_by(country, year) %>% summarise(minflu=min(flu),maxflu=max(flu),peakflu=week[which.max(flu)],
               troughflu=week[which.min(flu)],minT=min(T),maxT=max(T),peakT=week[which.max(T)], troughT=week[which.min(T)],minRH=min(RH),maxRH=max(RH),peakRH=week[which.max(RH)],
-              troughRH=week[which.min(RH)],.groups="keep")
-#minAH=min(AH),maxAH=max(AH),peakAH=week[which.max(AH)],troughAH=week[which.min(AH)],
+              troughRH=week[which.min(RH)],
+minAH=min(AH),maxAH=max(AH),peakAH=week[which.max(AH)],troughAH=week[which.min(AH)],.groups="keep")
 write.csv(data_wider_means,"../../Data/data_wider_means_POP.csv")
 write.csv(data_wider_means_summ,"../../Data/data_wider_means_summ_POP.csv")
 write.csv(data_wider_summ,"../../Data/data_wider_summ_POP.csv")
