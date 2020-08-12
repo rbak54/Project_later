@@ -118,7 +118,7 @@ data_wider_means_summ<-data_wider_means %>% group_by(country) %>% summarise(minf
 data_wider_means_summ<-data_wider_means %>% group_by(country) %>% summarise(minflu=min(meanflu),maxflu=max(meanflu),peakflu=week[which.max(meanflu)],
                             troughflu=week[which.min(meanflu)],minT=min(meantemp),maxT=max(meantemp),peakT=week[which.max(meantemp)], troughT=week[which.min(meantemp)],minRH=min(meanRH),
                             maxRH=max(meanRH),peakRH=week[which.max(meanRH)], troughRH=week[which.min(meanRH)],meanvarflu=mean(varflu),meanvartemp=mean(vartemp), varvarflu=var(varflu), varvartemp=var(vartemp),
-                            minAH=min(meanAH),maxAH=max(meanAH),peakAH=week[which.max(meanAH)], troughAH=week[which.min(meanAH)],.groups="keep")
+                            minAH=min(meanAH),maxAH=max(meanAH),peakAH=week[which.max(meanAH)], troughAH=week[which.min(meanAH)],meanAH=mean(meanAH),meanT=mean(meantemp),.groups="keep")
 
 # convert to data frame
 data_wider_means_summ<-as.data.frame(data_wider_means_summ)

@@ -78,10 +78,9 @@ plot4<-function(parms){
   }
   
   
-  
-  png(paste0("../../Writeup/png_plots/boxandwhisker_facet",sims,parms[["climate_label"]],".png"),width = 10,height = 5)
+  png(paste0("../../Writeup/png_plots/boxandwhisker_facet",sims,parms[["climate_label"]],".png"),width=50* 10,height=50* 5)
   print(ggplot(data=correlation_df, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot()  +theme_bw()+xlab("Mismatch") +ylab("Mean Correlation")+
-          theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) +facet_wrap(~Region))
+         facet_wrap(~Region) +theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) )
   graphics.off() 
   ##all below does is tell me how few southern there are. not clear trends within Region. so may be better to combine
   # short<-correlation_df_means_country[which(correlation_df_means_country$Region==i),]
@@ -109,7 +108,7 @@ plot4<-function(parms){
   print(ggplot(data=m,aes(mismatch,meanmeanI,group=country, colour = Region))+geom_point()+geom_line()+theme_bw()+ylab("Mean Proportion Infected")+xlab("Mismatch")+
           theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
   graphics.off()
-  png(paste0("../../Writeup/png_plots/mismatchseverity_meanmeanro",i,sims,parms[["climate_label"]],".png"),width=7.5,height = 5)
+  png(paste0("../../Writeup/png_plots/mismatchseverity_meanmeanro",i,sims,parms[["climate_label"]],".png"),width=50*7.5,height=50* 5)
   print(ggplot(data=m,aes(mismatch,meanmeanR0,group=country, colour = Region))+geom_point()+geom_line()+theme_bw()+ylab("Mean R0")+xlab("Mismatch")+
           theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
   graphics.off()
@@ -126,20 +125,18 @@ plot4<-function(parms){
   
 }
 
-sims=1
+sims=160
 
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",
               g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Temperature")
-parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
-              N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",
-              g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Temperature")
+
 plot4(parms)
 
 
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="RH",
-              g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Relative Humidity")
+              g=NA,q0=NA,Climate_Variables=NA,climate_label_long="Relative Humidity")
 
 plot4(parms)
 
@@ -150,6 +147,13 @@ parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
 plot4(parms)
 sims=1
 i=sims
+sims=160
+
+parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
+              N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",
+              g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Temperature")
+
+plot4(parms)
 covid_means<-read.csv("../../Results/fromfunction/covid/1temperature_shift.csv")
 covid_means$lat<-latlong[covid_means$country,"V2"]
 covid_means$country<-data_wider_means_summ[covid_means$country,"country"]
@@ -192,7 +196,7 @@ trop<-trop[which(trop$shift==0),]
 noshift<-covid_means[which(covid_means$shift==0),]
 noshift$Country<-noshift$country
 selected_countries<-noshift[which(noshift$country %in% c("United Kingdom", "Cambodia","India","Australia","Niger")),]
-png(paste0("../../Writeup/png_plots/selectedseriesR0",sims,parms[["climate_label"]],".png"),width=10,height=5)
+png(paste0("../../Writeup/png_plots/selectedseriesR0",sims,parms[["climate_label"]],".png"),width=50*10,height=50*5)
 print(ggplot(data=selected_countries,aes(week,meanR0,group=Country,color=Region))+geom_line()+theme_bw()+ylab("R0")+xlab("Week")+
         theme(legend.position="bottom",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))+facet_wrap(c("Country"),nrow=1)+
         theme(strip.background = element_blank(), strip.text.x = element_blank()) )
@@ -201,7 +205,7 @@ graphics.off()
 
 covid_means_summ<-covid_means %>% group_by(Region,country,shift,combination) %>% summarise(peakweek=which.max(meanR0),peakI=which.max(meanI))
 covid_means_summ<-covid_means_summ[which(covid_means_summ$shift==0),]
-png(paste0("../../Writeup/png_plots/covidtime_R0_peekweek_",sims,parms[["climate_label"]],".png"),width=10,height=5)
+png(paste0("../../Writeup/png_plots/covidtime_R0_peekweek_",sims,parms[["climate_label"]],".png"),width=50*10,height=50*5)
 print(ggplot(data=covid_means_summ,aes(y=peakweek,x=Region))+geom_boxplot()+theme_bw()+ylab("Week of Maximal R0")+xlab("Region")+
         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
 graphics.off()
@@ -217,7 +221,7 @@ png(paste0("../../Writeup/png_plots/shiftseverity_meanmeanI",i,sims,parms[["clim
 print(ggplot(data=m,aes(shift,meanmeanI,group=country, colour = Region))+geom_point()+geom_line()+theme_bw()+ylab("Mean Proportion Infected")+xlab("Shift")+
         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
 graphics.off()
-png(paste0("../../Writeup/png_plots/shiftseverity_meanmeanro",i,sims,parms[["climate_label"]],".png"),width = 7.5,height = 5)
+png(paste0("../../Writeup/png_plots/shiftseverity_meanmeanro",i,sims,parms[["climate_label"]],".png"),width=50* 7.5,height=50* 5)
 print(ggplot(data=m,aes(shift,meanmeanR0,group=country, colour = Region))+geom_point()+geom_line()+theme_bw()+ylab("Mean R0")+xlab("Shift")+
         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
 graphics.off()
@@ -229,6 +233,38 @@ png(paste0("../../Writeup/png_plots/shiftseverity_maxmeanro",i,sims,parms[["clim
 print(ggplot(data=m,aes(shift,maxmeanR0,group=country, colour = Region))+geom_point()+geom_line()+theme_bw()+ylab("Maximum R0")+xlab("Shift")+
         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
 graphics.off()
+
+
+mis<-covid_means %>% group_by(country,mismatch,Region) %>% summarise(meanmeanR0=mean(meanR0),meanmeanI=mean(meanI),maxmeanR0=max(meanR0),maxmeanI=max(meanI),.groups="keep")
+
+png(paste0("../../Writeup/png_plots/mismatchseverity_meanmeanI",i,sims,parms[["climate_label"]],".png"))
+print(ggplot(data=mis,aes(mismatch,meanmeanI,group=country, colour = Region))+geom_point()+geom_line()+theme_bw()+ylab("Mean Proportion Infected")+xlab("mismatch")+
+        theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
+graphics.off()
+png(paste0("../../Writeup/png_plots/mismatchseverity_meanmeanro",i,sims,parms[["climate_label"]],".png"),width=50*7.5,height=50* 5)
+print(ggplot(data=mis,aes(mismatch,meanmeanR0,group=country, colour = Region))+geom_point()+geom_line()+theme_bw()+ylab("Mean R0")+xlab("mismatch")+
+        theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
+graphics.off()
+png(paste0("../../Writeup/png_plots/mismatchseverity_maxmeanI",i,sims,parms[["climate_label"]],".png"))
+print(ggplot(data=mis,aes(mismatch,maxmeanI,group=country, colour = Region))+geom_point()+geom_line()+theme_bw()+ylab("Maximum Proportion Infected")+xlab("mismatch")+
+        theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
+graphics.off()
+png(paste0("../../Writeup/png_plots/mismatchseverity_maxmeanro",i,sims,parms[["climate_label"]],".png"))
+print(ggplot(data=mis,aes(mismatch,maxmeanR0,group=country, colour = Region))+geom_point()+geom_line()+theme_bw()+ylab("Maximum R0")+xlab("mismatch")+
+        theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
+graphics.off()
+
+
+
+
+
+
+
+
+
+
+
+
 
 data_with_lat<-cbind(data_wider_means_summ,latlong[,c(2,3)])
 
@@ -243,3 +279,5 @@ ggplot(data=data_with_lat,aes(V2,varvarflu))+geom_point()
 
 hist(data_wider_means_summ$meanvartemp)
 #}
+
+
