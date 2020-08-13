@@ -56,7 +56,7 @@ cr_climate <- function(Max_Coordinates_cr, range_C, Climate) {
     #c is 95 % confidence interval for duration
     #t range_C is the T values the function is calculated for
     #s type determines whether s is calculated using the upper or lower confidence interval
-
+#    range_C=c(-33.774,28.865)
     #find s  
     c_u = range_C[2]
     c_l = range_C[1]
@@ -72,9 +72,7 @@ cr_climate <- function(Max_Coordinates_cr, range_C, Climate) {
   #t_range_C not strictly needed 
   #return(mean_duration(T = T,m = c(temp_at_max, max_mean_contact), c = quantile_95, T_range_C = range_C, stype=stype))
    return(sqrt(2 * pi) * s * m_cr * (1 / (sqrt(2 * pi) * s))*exp((-(Climate - m_C) ^ 2) / (2 * s ^ 2)))
-  }
-  
-  
+}
 
 
 

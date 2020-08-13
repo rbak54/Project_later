@@ -28,9 +28,10 @@ integration_general<-function(parms,sims,time){
     print("estimated parameters used")
   }
   
-  extra_cols<-9
-  model_means=matrix(ncol =11)
-  names(model_means)<-c("country","week","mismatch","meanI","varI","meanR0","varR0","meantemp","vartemp","combination")
+  extra_cols<-11
+  model_means=matrix(ncol =12)
+  names(model_means)<-c("country","week","mismatch","combination","meanI","varI","meanR0","meancr","meanCl","varCl","meanq","varR0")
+ 
   parms_temp<-parms
   parms_temp[["sigma"]]<-NA
   parms_temp[["h"]]<-NA
@@ -52,39 +53,59 @@ integration_general<-function(parms,sims,time){
           
       if(parms[["climate_label"]]=="Temperature"){
           peak_contact_seq<-seq(data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"],length.out=5)
+        #  peak_contact_seq<-seq(-22.774,26.865,length.out=5)
           for (i in peak_contact_seq){
           #difference between temperature where contact rate is highest and lowest temperature in range (i.e virus does best survivasl or virus does best contact)
           #mismatch= 0 is when contact rate is highest at low temp 
           parms_temp[["Climate_Variables"]]= list(time_at_peak=data_wider_means_summ[location_index,"peakT"]*7,range_C=c(data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"]),Max_Climate_cr=i)
-           mismatch=(i-parms_temp[["Climate_Variables"]][["range_C"]][1])/(parms_temp[["Climate_Variables"]][["range_C"]][2]-parms_temp[["Climate_Variables"]][["range_C"]][1])
-      #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
+          # mismatch=(i-parms_temp[["Climate_Variables"]][["range_C"]][1])/(parms_temp[["Climate_Variables"]][["range_C"]][2]-parms_temp[["Climate_Variables"]][["range_C"]][1])
+         # mismatch=((i+22.774)/(26.865+22.774))
+          #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
           mismatch<-round(mismatch,2)
           temp = ode(    y = start,    time = time,    func = SEIR_model,    parms = parms_temp)
-           temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"],data_wider_means_summ[location_index,"peakT"],mismatch,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
-           colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","temperature","R0","week","combination")
-           temp_extra[,"temperature"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
-           temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"temperature"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
-           year<-ceiling((temp[,"time"])/365)
-           day<-(temp[,"time"]-(year-1)*365)
-            temp_extra[,"week"]<-ceiling(day/7)
-            temp_extra[,"country"]<-location_index
-           temp<-cbind(temp,temp_extra)
-            temp<-as_tibble(temp)
-           #model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I),meanR0=mean(R0),meantemp=mean(temperature),.groups="drop")
-           model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),varR0=var(R0),meantemp=mean(temperature),vartemp=var(temperature),.groups="drop")
-           
-                 #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meantemp")
-      #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meantemp")
-      
-            model_means<-bind_rows(model_means,model_means_temp)
+          temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"],data_wider_means_summ[location_index,"peakT"],mismatch,NA,NA,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
+          colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","T","R0","cr","q","week","combination")
+          temp_extra[,"T"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
+          temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"T"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
+          temp_extra[,"cr"]<-cr_climate(c(parms_temp[["Climate_Variables"]][["Max_Climate_cr"]],parms_temp[["Max_cr"]]),parms_temp[["Climate_Variables"]][["range_C"]],temp_extra[,"T"])
+          temp_extra[,"q"]<-q_climate(parms_temp[["q0"]],parms_temp[["g"]],temp_extra[,"T"])
+          
+          year<-ceiling((temp[,"time"])/365)
+          day<-(temp[,"time"]-(year-1)*365)
+          temp_extra[,"week"]<-ceiling(day/7)
+          temp_extra[,"country"]<-location_index
+          temp<-cbind(temp,temp_extra)
+          temp<-as_tibble(temp)
+          model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),meancr=mean(cr),
+                                                                                                meanCl=mean(T),varCl=var(T),meanq=mean(q),varR0=var(R0),.groups="keep")
+          model_means<-bind_rows(model_means,model_means_temp)
+          }
+      }
+      #     
+      #     
+      #            temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"],data_wider_means_summ[location_index,"peakT"],mismatch,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
+      #      colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","temperature","R0","week","combination")
+      #      temp_extra[,"temperature"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
+      #      temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"temperature"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
+      #      year<-ceiling((temp[,"time"])/365)
+      #      day<-(temp[,"time"]-(year-1)*365)
+      #       temp_extra[,"week"]<-ceiling(day/7)
+      #       temp_extra[,"country"]<-location_index
+      #      temp<-cbind(temp,temp_extra)
+      #       temp<-as_tibble(temp)
+      #      #model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I),meanR0=mean(R0),meantemp=mean(temperature),.groups="drop")
+      #      model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),varR0=var(R0),meantemp=mean(temperature),vartemp=var(temperature),.groups="drop")
+      #      
+      #            #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meantemp")
+      # #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meantemp")
+      # 
       #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meantemp")
       #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meantemp")
       
       #png(paste0("../../Results/Plots/model_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
       #plottime(temp)
       #graphics.off()
-          }
-      }
+      
     if(parms[["climate_label"]]=="RH"){
         peak_contact_seq<-seq(data_wider_means_summ[location_index,"minRH"],data_wider_means_summ[location_index,"maxRH"],length.out=5)
         for (i in peak_contact_seq){
@@ -95,24 +116,40 @@ integration_general<-function(parms,sims,time){
           #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
           mismatch<-round(mismatch,2)
           temp = ode(    y = start,    time = time,    func = SEIR_model,    parms = parms_temp)
-          temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minRH"],data_wider_means_summ[location_index,"maxRH"],data_wider_means_summ[location_index,"peakRH"],mismatch,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
-          colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","relative_humidity","R0","week","combination")
-          temp_extra[,"relative_humidity"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
-          temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"relative_humidity"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
+          temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minRH"],data_wider_means_summ[location_index,"maxRH"],data_wider_means_summ[location_index,"peakRH"],mismatch,NA,NA,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
+          colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","RH","R0","cr","q","week","combination")
+          temp_extra[,"RH"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
+          temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"RH"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
+          temp_extra[,"cr"]<-cr_climate(c(parms_temp[["Climate_Variables"]][["Max_Climate_cr"]],parms_temp[["Max_cr"]]),parms_temp[["Climate_Variables"]][["range_C"]],temp_extra[,"RH"])
+          temp_extra[,"q"]<-q_climate(parms_temp[["q0"]],parms_temp[["g"]],temp_extra[,"RH"])
+          
           year<-ceiling((temp[,"time"])/365)
           day<-(temp[,"time"]-(year-1)*365)
           temp_extra[,"week"]<-ceiling(day/7)
           temp_extra[,"country"]<-location_index
           temp<-cbind(temp,temp_extra)
           temp<-as_tibble(temp)
-          model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),
-                                                                                              meanRH=mean(RH),varR0=var(R0),.groups="keep")
-          #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
-          #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
+          model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),meancr=mean(cr),
+                                                                                                meanCl=mean(RH),varCl=var(RH),meanq=mean(q),varR0=var(R0),.groups="keep")
+          # 
+          #  temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minRH"],data_wider_means_summ[location_index,"maxRH"],data_wider_means_summ[location_index,"peakRH"],mismatch,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
+          # colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","relative_humidity","R0","week","combination")
+          # temp_extra[,"relative_humidity"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
+          # temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"relative_humidity"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
+          # year<-ceiling((temp[,"time"])/365)
+          # day<-(temp[,"time"]-(year-1)*365)
+          # temp_extra[,"week"]<-ceiling(day/7)
+          # temp_extra[,"country"]<-location_index
+          # temp<-cbind(temp,temp_extra)
+          # temp<-as_tibble(temp)
+          # model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),
+          #                                                                                     meanCl=mean(RH),varR0=var(R0),.groups="keep")
+          # #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
+          # #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           
           model_means<-bind_rows(model_means,model_means_temp)
-          #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanRH")
-          #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
+          #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
+          #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           
           #png(paste0("../../Results/Plots/model_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
           #plottime(RH)
@@ -131,27 +168,30 @@ integration_general<-function(parms,sims,time){
               #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
               mismatch<-round(mismatch,2)
               temp = ode(    y = start,    time = time,    func = SEIR_model,    parms = parms_temp)
-              #png(paste0("../../Results/Plots/model_series/AH",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
-              #plottime(temp)
-              #graphics.off()
-              temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minAH"],data_wider_means_summ[location_index,"maxAH"],data_wider_means_summ[location_index,"peakAH"],mismatch,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
-              colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","AH","R0","week","combination")
+            #  png(paste0("../../Results/Plots/model_series/AH",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
+            #  plottime(temp)
+             # graphics.off()
+              temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minAH"],data_wider_means_summ[location_index,"maxAH"],data_wider_means_summ[location_index,"peakAH"],mismatch,NA,NA,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
+              colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","AH","R0","cr","q","week","combination")
               temp_extra[,"AH"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
               temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"AH"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
+              temp_extra[,"cr"]<-cr_climate(c(parms_temp[["Climate_Variables"]][["Max_Climate_cr"]],parms_temp[["Max_cr"]]),parms_temp[["Climate_Variables"]][["range_C"]],temp_extra[,"AH"])
+              temp_extra[,"q"]<-q_climate(parms_temp[["q0"]],parms_temp[["g"]],temp_extra[,"AH"])
+              
               year<-ceiling((temp[,"time"])/365)
               day<-(temp[,"time"]-(year-1)*365)
               temp_extra[,"week"]<-ceiling(day/7)
               temp_extra[,"country"]<-location_index
               temp<-cbind(temp,temp_extra)
               temp<-as_tibble(temp)
-              model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),
-                                                                                                  meanAH=mean(AH),varR0=var(R0),.groups="keep")
-              #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanAH")
-              #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanAH")
+              model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),meancr=mean(cr),
+                                                                                                  meanCl=mean(AH),varCl=var(AH),meanq=mean(q),varR0=var(R0),.groups="keep")
+              #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
+              #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
               
               model_means<-bind_rows(model_means,model_means_temp)
-              #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanAH")
-              #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanAH")
+              #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
+              #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
               
              
             }
@@ -175,13 +215,13 @@ correlation_function<-function(model_means,parms){
   correlation_df<- as_tibble(model_means)  %>% group_by(country,combination,mismatch) 
 #  correlation_df<-na.omit(correlation_df$)
   if (parms[["climate_label"]]=="Temperature"){
-    correlation_df <- correlation_df %>%  summarise(corsI=correlations(meanI,unique(country)),corsR=correlations(meanR0,unique(country)),maxs=max(meantemp),mins=min(meantemp),time_max=which.max(meantemp),means=mean(meantemp),.groups="keep")
+    correlation_df <- correlation_df %>%  summarise(corsI=correlations(meanI,unique(country)),corsR=correlations(meanR0,unique(country)),maxs=max(meanCl),mins=min(meanCl),time_max=which.max(meanCl),means=mean(meanCl),.groups="keep")
   }
   if (parms[["climate_label"]]=="RH"){
-    correlation_df <- correlation_df %>%  summarise(corsI=correlations(meanI,unique(country)),corsR=correlations(meanR0,unique(country)),maxs=max(meanRH),mins=min(meanRH),time_max=which.max(meanRH),means=mean(meanRH),.groups="keep")
+    correlation_df <- correlation_df %>%  summarise(corsI=correlations(meanI,unique(country)),corsR=correlations(meanR0,unique(country)),maxs=max(meanCl),mins=min(meanCl),time_max=which.max(meanCl),means=mean(meanCl),.groups="keep")
   }
   if (parms[["climate_label"]]=="AH"){
-    correlation_df <- correlation_df %>%  summarise(corsI=correlations(meanI,unique(country)),corsR=correlations(meanR0,unique(country)),maxs=max(meanAH),mins=min(meanAH),time_max=which.max(meanAH),means=mean(meanAH),.groups="keep")
+    correlation_df <- correlation_df %>%  summarise(corsI=correlations(meanI,unique(country)),corsR=correlations(meanR0,unique(country)),maxs=max(meanCl),mins=min(meanCl),time_max=which.max(meanCl),means=mean(meanCl),.groups="keep")
   }
   #correlation_df$mismatch<-as.factor(correlation_df$mismatch)
   #for (i in unique(correlation_df$combination)){
@@ -196,7 +236,7 @@ correlation_function<-function(model_means,parms){
   colnames(matrix_extra)<-c("lat","long","pop")
   for (i in 1:nrow(matrix_extra)){
     matrix_extra[i,c(1:2)]<-latlong[which(latlong$V1==correlation_df$country[i]),c(3:4)]
-    matrix_extra[i,3]<-pop[which(pop$V1==correlation_df$country[i]),"V2"]
+   matrix_extra[i,3]<-pop[which(pop$V1==correlation_df$country[i]),"V2"]
     
   }
   correlation_df<-as.data.frame(correlation_df)
@@ -212,14 +252,14 @@ correlation_function<-function(model_means,parms){
 #parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
  #          N = 1, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="RH",
   #        g=0.0209,q0=-21.98,Climate_Variables=NA)
-parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
-              N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="AH",extra="",
-              g=0.062,q0=-30.162,Climate_Variables=NA)
+#parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
+#              N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="AH",extra="",
+#              g=0.062,q0=-30.162,Climate_Variables=NA)
 #sims_range<-c(1, 5,10,20,40,80,160)
 #sims_range<-c(5,10,20,40,80,160)
-sims_range<-c(1)
 #sims_range<-c(1)
-
+#sims_range<-c(1)
+run_integration<-function(parsm,sims_range){
 for (sss in sims_range){
 
 sims=sss
@@ -266,11 +306,29 @@ print(ggplot(data=correlation_df_means_country, aes(x= abs(lat), col=as.factor(m
 graphics.off()
 
 }
+}
+#sims=160
+#sims=1
+sims_range<-c(1)
 
-sims=160
-sims=1
-parms 
-# 
+parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
+                  N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="Temperature",extra="",
+                 g=0.085,q0=-9.079,Climate_Variables=NA)
+run_integration(parms,sims_range)
+parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
+          N = 1, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="RH",
+        g=0.0209,q0=-21.98,Climate_Variables=NA) 
+#run_integration(parms,sims_range )
+parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
+              N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="AH",extra="",
+              g=0.062,q0=-30.162,Climate_Variables=NA)
+#sims_range<-c(1, 5,10,20,40,80,160)
+#sims_range<-c(5,10,20,40,80,160)
+#run_integration(parms,sims_range)
+
+
+
+
 # #using data to plot
 model_means<-read.csv(paste0("../../Results/fromfunction/",sims,parms[["climate_label"]],".csv"))
  correlation_df<-correlation_function(model_means,parms)
@@ -367,7 +425,7 @@ for (i in unique(correlation_df_means_country$mismatch)){
 # # correlation_df<-na.omit(correlation_df)
 # # #correlation_df <- correlation_df %>%  summarise(cors=correlations(meanR0,unique(country)),.groups="keep")
 # #correlation_df <- correlation_df %>%  summarise(cors=correlations(meanR0,unique(country)),maxs=max(meantemp),mins=min(meantemp),means=mean(meantemp),.groups="keep")
-# correlation_df <- correlation_df %>%  summarise(corsI=correlations(meanI,unique(country)),corsR=correlations(meanR0,unique(country)),maxs=max(meanRH),mins=min(meanRH),means=mean(meanRH),.groups="keep")
+# correlation_df <- correlation_df %>%  summarise(corsI=correlations(meanI,unique(country)),corsR=correlations(meanR0,unique(country)),maxs=max(meanCl),mins=min(meanCl),means=mean(meanCl),.groups="keep")
 # #correlation_df$mismatch<-as.factor(correlation_df$mismatch)
 # #for (i in unique(correlation_df$combination)){
 # #  png(paste0("../../Results/Plots/comboplots/",i,".png"))
@@ -403,7 +461,7 @@ for (i in unique(correlation_df_means_country$mismatch)){
 # a=Sys.time()
 # extra_cols<-8
 # model_means=matrix(ncol =6)
-# names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanRH")
+# names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
 # for (location_index in 1:nrow(data_wider_means_summ)){
 #   parms[["N"]]=population_deyle[location_index,3]
 #   start = c(S = (1-1e-4)*parms[["N"]],
@@ -429,13 +487,13 @@ for (i in unique(correlation_df_means_country$mismatch)){
 #     temp_extra[,"country"]<-location_index
 #     RH<-cbind(RH,temp_extra)
 #     RH<-as_tibble(RH)
-#     model_means_temp<- RH %>% group_by(country,week,mismatch) %>% summarise(meanI=mean(I),meanR0=mean(R0),meanRH=mean(relative_humidity),.groups="drop")
-#     #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
-#     #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
+#     model_means_temp<- RH %>% group_by(country,week,mismatch) %>% summarise(meanI=mean(I),meanR0=mean(R0),meanCl=mean(relative_humidity),.groups="drop")
+#     #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
+#     #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
 #     
 #     model_means<-bind_rows(model_means,model_means_temp)
-#     #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanRH")
-#     #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
+#     #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
+#     #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
 #     
 #     #png(paste0("../../Results/Plots/model_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
 #     #plottime(RH)
@@ -452,7 +510,7 @@ for (i in unique(correlation_df_means_country$mismatch)){
 # 
 # extra_cols<-9
 # model_means=matrix(ncol =7)
-# names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanRH","combination")
+# names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl","combination")
 # parms_temp<-parms_main
 # parms_temp[["sigma"]]<-NA
 # parms_temp[["h"]]<-NA
@@ -491,13 +549,13 @@ for (i in unique(correlation_df_means_country$mismatch)){
 #       temp_extra[,"country"]<-location_index
 #       RH<-cbind(RH,temp_extra)
 #       RH<-as_tibble(RH)
-#       model_means_temp<- RH %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I),meanR0=mean(R0),meanRH=mean(relative_humidity),.groups="drop")
-#       #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
-#       #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
+#       model_means_temp<- RH %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I),meanR0=mean(R0),meanCl=mean(relative_humidity),.groups="drop")
+#       #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
+#       #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
 #       
 #       model_means<-bind_rows(model_means,model_means_temp)
-#       #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanRH")
-#       #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanRH")
+#       #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
+#       #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
 #       
 #       #png(paste0("../../Results/Plots/model_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
 #       #plottime(RH)
