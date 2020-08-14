@@ -19,7 +19,7 @@ data_wider_means<-read.csv("../../Data/data_wider_means_POP.csv")
 
 latlong=read.csv("../../Data/latlong/latlong_sel_short.csv")
 
-plot_influenza<-function(parms){
+plot_influenza<-function(parms,sims){
   correlation_df<-read.csv(paste0("../../Results/fromfunction/cors/",sims,parms[["climate_label"]],"correlation_dataframe.csv"))
   correlation_df$Region<-cut(correlation_df$lat,breaks=c(min(correlation_df$lat)-1,-23.5,23.5,max(correlation_df$lat)+1), labels=c("Southern","Tropics","Northern"))
   correlation_df$Region_Combined<-cut(abs(correlation_df$lat),breaks=c(0,23.5,max(abs(correlation_df$lat)+1)), labels=c("Tropics","Temperate"))
@@ -59,7 +59,7 @@ plot_influenza<-function(parms){
   maxR<-max(m$maR)
   maxI<-max(m$maI)
   
-  pdf(paste0("../../Writeup/draft plots/favs/mismatchseverity_meanmeanI",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"))
+  pdf(paste0("../../Writeup/draft plots/favs/mismatchseverity_meanmeanI",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 5)
   print(ggplot(data=m,aes(mismatch,mI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Mean Proportion Infected")+xlab("Mismatch")+
           geom_errorbar(aes(ymin=mI-smI,ymax=mI+smI))+scale_y_continuous(limits = c(0,maxI), breaks = seq(0,maxI,by=0.1))+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=0.25))+
           theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
@@ -69,13 +69,13 @@ plot_influenza<-function(parms){
           geom_errorbar(aes(ymin=mR-smR,ymax=mR+smR))+scale_y_continuous(limits = c(0,maxR), breaks = seq(0,maxR,by=1))+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=0.25))+
           theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
   graphics.off()
-  pdf(paste0("../../Writeup/draft plots/favs/mismatchseverity_maxmeanI",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"))
+  pdf(paste0("../../Writeup/draft plots/favs/mismatchseverity_maxmeanI",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 5)
   print(ggplot(data=m,aes(mismatch,maI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum Proportion Infected")+xlab("Mismatch")+
           geom_errorbar(aes(ymin=maI-smaI,ymax=maI+smaI))+scale_y_continuous(limits = c(0,maxI), breaks = seq(0,maxI,by=0.1))+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=0.25))+
           theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
   graphics.off()
   
-  pdf(paste0("../../Writeup/draft plots/favs/mismatchseverity_maxmeanro",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"))
+  pdf(paste0("../../Writeup/draft plots/favs/mismatchseverity_maxmeanro",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 5)
   print(ggplot(data=m,aes(mismatch,maR,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum R0 Infected")+xlab("Mismatch")+
           geom_errorbar(aes(ymin=maR-smaR,ymax=maR+smaR))+scale_y_continuous(limits = c(0,maxR), breaks = seq(0,maxR,by=1))+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=0.25))+
           theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
@@ -118,13 +118,13 @@ plot_influenza<-function(parms){
     data_space=data_space[1:length(data)]
     model_means_2[data_space,"data"]<-data
   }
-  cbPalette <- c( "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#CC79A7","#000000")
+  cbPalette <- c( "#000000","#E69F00", "#56B4E9", "#009E73", "#F0E442", "#CC79A7")
   
   #make a function that finds how much to shift 
   # do for seperate then pic best
   #then go back to hump thing- look for temp= nothing
   #for (country in unique(model_means_2$country)){
-  pdf(paste0("../../Writeup/draft plots/favs/",parms[["climate_label_long"]],"sel_I_TIME_DATA.pdf"),width=15,height=5)
+  pdf(paste0("../../Writeup/draft plots/favs/",parms[["climate_label"]],"sel_I_TIME_DATA.pdf"),width=15,height=5)
 
   model_means_3<-model_means_2[which(model_means_2$mismatch==1),]
   if (parms[["climate_label"]]=="AH"){
@@ -139,12 +139,16 @@ plot_influenza<-function(parms){
    #    mult<-max(model_means_3$meanI)/max(model_means_3$data,na.rm = T)
  # p<-ggplot(data=model_means_3, aes(week, meanI,group=mismatch,col=mismatch))+geom_line()+facet_wrap(~country)
   
-  p<-ggplot(data=model_means_3, aes(week, meanI,group=mismatch,col=mismatch))+geom_line()+facet_wrap(~c_order,nrow=1)
-  p <- p + geom_line(aes(y = mult*data, colour = "Data"))
+ # p<-ggplot(data=model_means_3, aes(week, meanI,group=mismatch,col=mismatch))+geom_line()+facet_wrap(~c_order,nrow=1)
+  p<-ggplot(data=model_means_3, aes(week, meanI,group=country,col=country))+geom_line()+facet_wrap(~mismatch,nrow=1)
+  
+    p <- p + geom_line(aes(y = mult*data, colour = "Data"))
   
   p <- p + scale_y_continuous(sec.axis = sec_axis(~./mult, name = "Data Flu Cases"))
+  #p <- p + labs(x = "Week",
+   #             y = "Model Number of Infectious", colour="Mismatch") +theme_bw()
   p <- p + labs(x = "Week",
-                y = "Model Number of Infectious", colour="Mismatch") +theme_bw()
+                y = "Model Number of Infectious", colour="Country") +theme_bw()
   p<-p+  scale_colour_manual(values=cbPalette)
   p<-p+theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
   
@@ -152,7 +156,7 @@ plot_influenza<-function(parms){
   graphics.off()
   for (country in unique(model_means_2$country)){
     model_means_4<-model_means_2[which(model_means_2$country==country),]
-    png(paste0("../../Writeup/draft plots/loop",country,parms[["climate_label_long"]],"sel_I_TIME_DATA.png"),width=50*10,height=50*5)
+    png(paste0("../../Writeup/draft plots/loop",country,parms[["climate_label"]],"sel_I_TIME_DATA.png"),width=50*10,height=50*5)
     mult<-max(model_means_4$meanI)/max(model_means_4$data,na.rm = T)
     
     p<-ggplot(data=model_means_4, aes(week, meanI,group=mismatch,col=mismatch))+geom_line()
@@ -380,27 +384,30 @@ graphics.off()
   
 
 
-sims=1
 
-sims=160
 
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",
               g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Temperature")
-plot_influenza(parms)
+plot_influenza(parms,sims=1)
+
+plot_influenza(parms,sims=160)
 
 #covid_plots(parms)
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="RH",
               g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Relative Humidity")
 
-#plot_influenza(parms)
-#need t oredo rh with proportion
-sims=1
+plot_influenza(parms,sims=1)
+
+plot_influenza(parms,sims=160)#need t oredo rh with proportion
+#sims=1
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="AH",extra="Absolute Humidity",
               g=0.062,q0=-30.162,Climate_Variables=NA)
-plot_influenza(parms)
+plot_influenza(parms,sims=1)
+#plot_influenza(parms,sims=160)#need t oredo rh with proportion
+
 
 pdf(paste0("../../Writeup/draft plots/favs/AHtemp.pdf"))
 ggplot(data_wider_means,aes(meantemp,meanAH ))+geom_point()+theme_bw()+ylab("Absolute Humidity")+xlab("Temperature")+
@@ -427,7 +434,7 @@ m<-covid_means_summary %>%  group_by(Region_Combined,shift) %>% summarise(mI=mea
 maxR<-max(m$maR)
 maxI<-max(m$maI)
 
-pdf(paste0("../../Writeup/draft plots/favs/shiftseverity_meanmeanI",sims,".pdf"))
+pdf(paste0("../../Writeup/draft plots/favs/shiftseverity_meanmeanI",sims,".pdf"),width=7.5,height= 5)
 print(ggplot(data=m,aes(shift,mI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Mean Proportion Infected")+xlab("Shift")+
         geom_errorbar(aes(ymin=mI-smI,ymax=mI+smI),width=0.25)+scale_y_continuous(limits = c(0,maxI), breaks = seq(0,maxI,by=0.1))+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=0.25))+
         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
@@ -437,13 +444,13 @@ print(ggplot(data=m,aes(shift,mR,group=Region_Combined, colour = Region_Combined
         geom_errorbar(aes(ymin=mR-smR,ymax=mR+smR))+scale_y_continuous(limits = c(0,maxR), breaks = seq(0,maxR,by=1))+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=0.25))+
         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
 graphics.off()
-pdf(paste0("../../Writeup/draft plots/favs/shiftseverity_maxmeanI",sims,".pdf"))
+pdf(paste0("../../Writeup/draft plots/favs/shiftseverity_maxmeanI",sims,".pdf"),width=7.5,height= 5)
 print(ggplot(data=m,aes(shift,maI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum Proportion Infected")+xlab("Shift")+
         geom_errorbar(aes(ymin=maI-smaI,ymax=maI+smaI))+scale_y_continuous(limits = c(0,maxI), breaks = seq(0,maxI,by=0.1))+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=0.25))+
         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
 graphics.off()
 
-pdf(paste0("../../Writeup/draft plots/favs/shiftseverity_maxmeanro",sims,".pdf"))
+pdf(paste0("../../Writeup/draft plots/favs/shiftseverity_maxmeanro",sims,".pdf"),width=7.5,height= 5)
 print(ggplot(data=m,aes(shift,maR,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum R0")+xlab("Shift")+
         geom_errorbar(aes(ymin=maR-smaR,ymax=maR+smaR))+scale_y_continuous(limits = c(0,maxR), breaks = seq(0,maxR,by=1))+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=0.25))+
         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
@@ -587,12 +594,12 @@ graphics.off()
 # 
 # 
 #general climate - showing mismatch
-parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
-              N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",
-              g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Temperature")
-plot_influenza(parms)
-
-
+# parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
+#               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",
+#               g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Temperature")
+# plot_influenza(parms)
+# 
+# 
 
 
 # 
@@ -672,10 +679,10 @@ ggplot(data=data_wider_means_summ,aes(x=meanT,y=meanvarflu))+geom_point()
 ggplot(data=data_wider_means_summ,aes(x=maxT-minT,y=meanvartemp))+geom_point()
 
 
-ggplot(data=data_wider_means_summ,aes(x=maxT-minT,y=(meanvarflu))/meanmeanflu)+geom_point()
+ggplot(data=data_wider_means_summ,aes(x=maxT-minT,y=(meanvarflu/meanmeanflu)))+geom_point()
 
 
-cor.test(data_wider_means_summ$meanvarflu,data_wider_means_summ$maxT-data_wider_means_summ$minT)
+cor.test(data_wider_means_summ$meanvarflu/data_wider_means_summ$meanmeanflu,data_wider_means_summ$maxT-data_wider_means_summ$minT)
 #the question is how does variance account for scale 
 
   

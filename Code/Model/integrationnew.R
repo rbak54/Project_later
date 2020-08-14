@@ -22,8 +22,8 @@ integration_general<-function(parms,sims,time){
       Y<-make_lhs(n=sims,parms = parms)
       write.csv(Y,"../../Data/latincube.csv")
   }else{
-    Y<-as.data.frame(matrix(c(parms[["sigma"]],parms[["h"]],parms[["mu"]],parms[["f"]]),nrow=1))
-    colnames(Y)<-c("sigma","h","mu","f")
+    Y<-as.data.frame(matrix(c(parms[["epsilon"]],parms[["h"]],parms[["mu"]],parms[["f"]]),nrow=1))
+    colnames(Y)<-c("epsilon","h","mu","f")
     
     print("estimated parameters used")
   }
@@ -33,14 +33,14 @@ integration_general<-function(parms,sims,time){
   names(model_means)<-c("country","week","mismatch","combination","meanI","varI","meanR0","meancr","meanCl","varCl","meanq","varR0")
  
   parms_temp<-parms
-  parms_temp[["sigma"]]<-NA
+  parms_temp[["epsilon"]]<-NA
   parms_temp[["h"]]<-NA
   parms_temp[["mu"]]<-NA
   parms_temp[["f"]]<-NA
   parms_temp[["N"]]<-NA
 
   for (combination in 1:nrow(Y)){
-       parms_temp[["sigma"]]<-Y$sigma[combination]
+       parms_temp[["epsilon"]]<-Y$epsilon[combination]
        parms_temp[["h"]]<-Y$h[combination]
        parms_temp[["mu"]]<-Y$mu[combination]
        parms_temp[["f"]]<-Y$f[combination]
@@ -52,22 +52,30 @@ integration_general<-function(parms,sims,time){
                     R = 0*parms_temp[["N"]])
           
       if(parms[["climate_label"]]=="Temperature"){
-          peak_contact_seq<-seq(data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"],length.out=5)
-        #  peak_contact_seq<-seq(-22.774,26.865,length.out=5)
+        peak_contact_seq<-seq(data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"],length.out=5)
+          #peak_contact_seq<-seq(-22.774,26.865,length.out=5)
           for (i in peak_contact_seq){
           #difference between temperature where contact rate is highest and lowest temperature in range (i.e virus does best survivasl or virus does best contact)
           #mismatch= 0 is when contact rate is highest at low temp 
           parms_temp[["Climate_Variables"]]= list(time_at_peak=data_wider_means_summ[location_index,"peakT"]*7,range_C=c(data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"]),Max_Climate_cr=i)
-          # mismatch=(i-parms_temp[["Climate_Variables"]][["range_C"]][1])/(parms_temp[["Climate_Variables"]][["range_C"]][2]-parms_temp[["Climate_Variables"]][["range_C"]][1])
-         # mismatch=((i+22.774)/(26.865+22.774))
+          mismatch=(i-parms_temp[["Climate_Variables"]][["range_C"]][1])/(parms_temp[["Climate_Variables"]][["range_C"]][2]-parms_temp[["Climate_Variables"]][["range_C"]][1])
+        #  mismatch=((i+22.774)/(26.865+22.774))
           #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
           mismatch<-round(mismatch,2)
+           if (abs(i-parms_temp[["Climate_Variables"]][["range_C"]][1])>abs(i-parms_temp[["Climate_Variables"]][["range_C"]][2])){
+              s = (-(parms_temp[["Climate_Variables"]][["range_C"]][1]- i) / 1.96)
+            }else{
+             s = ((parms_temp[["Climate_Variables"]][["range_C"]][2] - i) / 1.96)
+          }
+          parms_temp[["Climate_Variables"]][["s"]]=s
           temp = ode(    y = start,    time = time,    func = SEIR_model,    parms = parms_temp)
           temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minT"],data_wider_means_summ[location_index,"maxT"],data_wider_means_summ[location_index,"peakT"],mismatch,NA,NA,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
           colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","T","R0","cr","q","week","combination")
           temp_extra[,"T"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
           temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"T"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
-          temp_extra[,"cr"]<-cr_climate(c(parms_temp[["Climate_Variables"]][["Max_Climate_cr"]],parms_temp[["Max_cr"]]),parms_temp[["Climate_Variables"]][["range_C"]],temp_extra[,"T"])
+          #temp_extra[,"cr"]<-cr_climate(c(parms_temp[["Climate_Variables"]][["Max_Climate_cr"]],parms_temp[["Max_cr"]]),parms_temp[["Climate_Variables"]][["range_C"]],temp_extra[,"T"])
+          temp_extra[,"cr"]<-cr_climate_quick(Max_Coordinates_cr = c(parms_temp[["Climate_Variables"]][["Max_Climate_cr"]],parms_temp[["Max_cr"]]),Climate=temp_extra[,"T"],s=s)
+          
           temp_extra[,"q"]<-q_climate(parms_temp[["q0"]],parms_temp[["g"]],temp_extra[,"T"])
           
           year<-ceiling((temp[,"time"])/365)
@@ -76,6 +84,7 @@ integration_general<-function(parms,sims,time){
           temp_extra[,"country"]<-location_index
           temp<-cbind(temp,temp_extra)
           temp<-as_tibble(temp)
+          temp<-temp[which(year>1),]
           model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),meancr=mean(cr),
                                                                                                 meanCl=mean(T),varCl=var(T),meanq=mean(q),varR0=var(R0),.groups="keep")
           model_means<-bind_rows(model_means,model_means_temp)
@@ -115,12 +124,20 @@ integration_general<-function(parms,sims,time){
           mismatch=(i-parms_temp[["Climate_Variables"]][["range_C"]][1])/(parms_temp[["Climate_Variables"]][["range_C"]][2]-parms_temp[["Climate_Variables"]][["range_C"]][1])
           #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
           mismatch<-round(mismatch,2)
+          if (abs(i-parms_temp[["Climate_Variables"]][["range_C"]][1])>abs(i-parms_temp[["Climate_Variables"]][["range_C"]][2])){
+            s = (-(parms_temp[["Climate_Variables"]][["range_C"]][1]- i) / 1.96)
+          }else{
+            s = ((parms_temp[["Climate_Variables"]][["range_C"]][2] - i) / 1.96)
+          }
+          parms_temp[["Climate_Variables"]][["s"]]=s
           temp = ode(    y = start,    time = time,    func = SEIR_model,    parms = parms_temp)
           temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minRH"],data_wider_means_summ[location_index,"maxRH"],data_wider_means_summ[location_index,"peakRH"],mismatch,NA,NA,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
           colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","RH","R0","cr","q","week","combination")
           temp_extra[,"RH"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
           temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"RH"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
-          temp_extra[,"cr"]<-cr_climate(c(parms_temp[["Climate_Variables"]][["Max_Climate_cr"]],parms_temp[["Max_cr"]]),parms_temp[["Climate_Variables"]][["range_C"]],temp_extra[,"RH"])
+          #temp_extra[,"cr"]<-cr_climate(c(parms_temp[["Climate_Variables"]][["Max_Climate_cr"]],parms_temp[["Max_cr"]]),parms_temp[["Climate_Variables"]][["range_C"]],temp_extra[,"RH"])
+          temp_extra[,"cr"]<-cr_climate_quick(Max_Coordinates_cr = c(parms_temp[["Climate_Variables"]][["Max_Climate_cr"]],parms_temp[["Max_cr"]]),Climate=temp_extra[,"RH"],s=s)
+          
           temp_extra[,"q"]<-q_climate(parms_temp[["q0"]],parms_temp[["g"]],temp_extra[,"RH"])
           
           year<-ceiling((temp[,"time"])/365)
@@ -129,6 +146,7 @@ integration_general<-function(parms,sims,time){
           temp_extra[,"country"]<-location_index
           temp<-cbind(temp,temp_extra)
           temp<-as_tibble(temp)
+          temp<-temp[which(year>1),]
           model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),meancr=mean(cr),
                                                                                                 meanCl=mean(RH),varCl=var(RH),meanq=mean(q),varR0=var(R0),.groups="keep")
           # 
@@ -167,6 +185,12 @@ integration_general<-function(parms,sims,time){
               mismatch=(i-parms_temp[["Climate_Variables"]][["range_C"]][1])/(parms_temp[["Climate_Variables"]][["range_C"]][2]-parms_temp[["Climate_Variables"]][["range_C"]][1])
               #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
               mismatch<-round(mismatch,2)
+              if (abs(i-parms_temp[["Climate_Variables"]][["range_C"]][1])>abs(i-parms_temp[["Climate_Variables"]][["range_C"]][2])){
+                s = (-(parms_temp[["Climate_Variables"]][["range_C"]][1]- i) / 1.96)
+              }else{
+                s = ((parms_temp[["Climate_Variables"]][["range_C"]][2] - i) / 1.96)
+              }
+              parms_temp[["Climate_Variables"]][["s"]]=s
               temp = ode(    y = start,    time = time,    func = SEIR_model,    parms = parms_temp)
             #  png(paste0("../../Results/Plots/model_series/AH",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
             #  plottime(temp)
@@ -175,7 +199,7 @@ integration_general<-function(parms,sims,time){
               colnames(temp_extra)<-c("country","lower","upper","peak_week","mismatch","AH","R0","cr","q","week","combination")
               temp_extra[,"AH"]<-Climate_Time_Function(time = time[1:nrow(temp)],min=parms_temp[["Climate_Variables"]][["range_C"]][1],max=parms_temp[["Climate_Variables"]][["range_C"]][2],time_at_peak =parms_temp[["Climate_Variables"]][["time_at_peak"]] )
               temp_extra[,"R0"]<-find_R0_function(Climate=temp_extra[c(1:nrow(temp)),"AH"],parms=parms_temp, Climate_Variables_Temp=parms_temp[["Climate_Variables"]], max_R0_Req=F)
-              temp_extra[,"cr"]<-cr_climate(c(parms_temp[["Climate_Variables"]][["Max_Climate_cr"]],parms_temp[["Max_cr"]]),parms_temp[["Climate_Variables"]][["range_C"]],temp_extra[,"AH"])
+              temp_extra[,"cr"]<-cr_climate_quick(Max_Coordinates_cr = c(parms_temp[["Climate_Variables"]][["Max_Climate_cr"]],parms_temp[["Max_cr"]]),Climate=temp_extra[,"AH"],s=s)
               temp_extra[,"q"]<-q_climate(parms_temp[["q0"]],parms_temp[["g"]],temp_extra[,"AH"])
               
               year<-ceiling((temp[,"time"])/365)
@@ -184,6 +208,8 @@ integration_general<-function(parms,sims,time){
               temp_extra[,"country"]<-location_index
               temp<-cbind(temp,temp_extra)
               temp<-as_tibble(temp)
+              temp<-temp[which(year>1),]
+  
               model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),meancr=mean(cr),
                                                                                                   meanCl=mean(AH),varCl=var(AH),meanq=mean(q),varR0=var(R0),.groups="keep")
               #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
@@ -259,7 +285,7 @@ correlation_function<-function(model_means,parms){
 #sims_range<-c(5,10,20,40,80,160)
 #sims_range<-c(1)
 #sims_range<-c(1)
-run_integration<-function(parsm,sims_range){
+run_integration<-function(parms,sims_range){
 for (sss in sims_range){
 
 sims=sss
@@ -308,24 +334,29 @@ graphics.off()
 }
 }
 #sims=160
-#sims=1
+sims=1
 sims_range<-c(1)
 
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
                   N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="Temperature",extra="",
                  g=0.085,q0=-9.079,Climate_Variables=NA)
+a<-Sys.time()
 run_integration(parms,sims_range)
+print(Sys.time()-a)
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
           N = 1, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="RH",
         g=0.0209,q0=-21.98,Climate_Variables=NA) 
-#run_integration(parms,sims_range )
+a<-Sys.time()
+run_integration(parms,sims_range)
+print(Sys.time()-a)
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="AH",extra="",
               g=0.062,q0=-30.162,Climate_Variables=NA)
 #sims_range<-c(1, 5,10,20,40,80,160)
 #sims_range<-c(5,10,20,40,80,160)
-#run_integration(parms,sims_range)
-
+a<-Sys.time()
+run_integration(parms,sims_range)
+print(Sys.time()-a)
 
 
 
@@ -518,7 +549,6 @@ for (i in unique(correlation_df_means_country$mismatch)){
 # parms_temp[["f"]]<-NA
 # parms_temp[["N"]]<-NA
 # a<-Sys.time()
-# 
 # for (combination in 1:nrow(Y)){
 #   parms_temp[["sigma"]]<-Y$sigma[combination]
 #   parms_temp[["h"]]<-Y$h[combination]

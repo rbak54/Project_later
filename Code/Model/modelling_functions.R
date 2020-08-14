@@ -56,25 +56,47 @@ cr_climate <- function(Max_Coordinates_cr, range_C, Climate) {
     #c is 95 % confidence interval for duration
     #t range_C is the T values the function is calculated for
     #s type determines whether s is calculated using the upper or lower confidence interval
-#    range_C=c(-33.774,28.865)
+    #range_C=c(-22.774,28.865)
     #find s  
-    c_u = range_C[2]
-    c_l = range_C[1]
-    m_C = Max_Coordinates_cr[1]
-    m_cr = Max_Coordinates_cr[2] 
-    
-    if (abs(Max_Coordinates_cr[1]-range_C[1])>abs(Max_Coordinates_cr[1]-range_C[2])){
-          s = -(c_l - m_C) / 1.96
-    }else{
-          s = (c_u - m_C) / 1.96
-          }
-   #finds d at T values for given parameters (contact finds equation using duration_normal_scaled)
+  # c_u = range_C[2]
+  # c_l = range_C[1]
+  # m_C = Max_Coordinates_cr[1]
+  # m_cr = Max_Coordinates_cr[2] 
+  # 
+  # if (abs(Max_Coordinates_cr[1]-range_C[1])>abs(Max_Coordinates_cr[1]-range_C[2])){
+  #   s = (-(c_l - m_C) / 1.96)
+  # }else{
+  #   s = ((c_u - m_C) / 1.96)
+  # }
+  # #finds d at T values for given parameters (contact finds equation using duration_normal_scaled)
+  # #t_range_C not strictly needed 
+  # #return(mean_duration(T = T,m = c(temp_at_max, max_mean_contact), c = quantile_95, T_range_C = range_C, stype=stype))
+  # return(sqrt(2 * pi) * s * m_cr * (1 / (sqrt(2 * pi) * s))*exp((-(Climate - m_C) ^ 2) / (2 * s ^ 2)))
+
+  if (abs(Max_Coordinates_cr[1]-range_C[1])>abs(Max_Coordinates_cr[1]-range_C[2])){
+    s = (-(range_C[1] - Max_Coordinates_cr[1]) / 1.96)
+  }else{
+    s = ((range_C[2] - Max_Coordinates_cr[1]) / 1.96)
+  }
+  #finds d at T values for given parameters (contact finds equation using duration_normal_scaled)
   #t_range_C not strictly needed 
   #return(mean_duration(T = T,m = c(temp_at_max, max_mean_contact), c = quantile_95, T_range_C = range_C, stype=stype))
-   return(sqrt(2 * pi) * s * m_cr * (1 / (sqrt(2 * pi) * s))*exp((-(Climate - m_C) ^ 2) / (2 * s ^ 2)))
+  return(sqrt(2 * pi) * s * Max_Coordinates_cr[2] * (1 / (sqrt(2 * pi) * s))*exp((-(Climate - Max_Coordinates_cr[1]) ^ 2) / (2 * s ^ 2)))
 }
 
+cr_climate_quick <- function(Max_Coordinates_cr, s, Climate) {
 
+  
+ # if (abs(Max_Coordinates_cr[1]-range_C[1])>abs(Max_Coordinates_cr[1]-range_C[2])){
+#    s = (-(range_C[1] - Max_Coordinates_cr[1]) / 1.96)
+#  }else{
+ #   s = ((range_C[2] - Max_Coordinates_cr[1]) / 1.96)
+  #}
+  #finds d at T values for given parameters (contact finds equation using duration_normal_scaled)
+  #t_range_C not strictly needed 
+  #return(mean_duration(T = T,m = c(temp_at_max, max_mean_contact), c = quantile_95, T_range_C = range_C, stype=stype))
+  return(sqrt(2 * pi) * s * Max_Coordinates_cr[2] * (1 / (sqrt(2 * pi) * s))*exp((-(Climate - Max_Coordinates_cr[1]) ^ 2) / (2 * s ^ 2)))
+}
 
 
 
@@ -180,13 +202,15 @@ SEIR_model <- function(time, values, parms) {
   range_C=parms[["Climate_Variables"]][["range_C"]]
   Max_Climate_cr=parms[["Climate_Variables"]][["Max_Climate_cr"]]
   
-  
+  s=parms[["Climate_Variables"]][["s"]]
   
   #find climate given time
   Climate <- Climate_Time_Function(time=time ,min=range_C[1],max=range_C[2],time_at_peak = time_at_peak)   
   
-  cr_value=cr_climate(Climate =  Climate,Max_Coordinates_cr = c(Max_Climate_cr,Max_cr), range_C=range_C)
-  q_value= q_climate(q0=q0,g=g, Climate=Climate)
+  #cr_value=cr_climate(Climate =  Climate,Max_Coordinates_cr = c(Max_Climate_cr,Max_cr), range_C=range_C)
+  cr_value=cr_climate_quick(Climate =  Climate,Max_Coordinates_cr = c(Max_Climate_cr,Max_cr), s=s)
+  
+    q_value= q_climate(q0=q0,g=g, Climate=Climate)
   beta_value = beta(c_r = cr_value,q =q_value ,d = d,h =h ,epsilon =epsilon )    
   currentpop<-S+E+I+R
   #seir model
