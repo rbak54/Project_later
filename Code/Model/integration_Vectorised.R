@@ -29,6 +29,7 @@ integration_general<-function(parms,sims,time){
   }
   
   extra_cols<-11
+  #temp_list=list()
   model_means=matrix(ncol =12)
   names(model_means)<-c("country","week","mismatch","combination","meanI","varI","meanR0","meancr","meanCl","varCl","meanq","varR0")
   
@@ -38,7 +39,7 @@ integration_general<-function(parms,sims,time){
   parms_temp[["mu"]]<-NA
   parms_temp[["f"]]<-NA
   parms_temp[["N"]]<-NA
-  
+  a<-Sys.time()
   for (combination in 1:nrow(Y)){
     parms_temp[["epsilon"]]<-Y$epsilon[combination]
     parms_temp[["h"]]<-Y$h[combination]
@@ -84,10 +85,12 @@ integration_general<-function(parms,sims,time){
           temp_extra[,"country"]<-location_index
           temp<-cbind(temp,temp_extra)
           temp<-as_tibble(temp)
-          temp<-temp[which(year>1),]
+       #   temp<-temp[which(year>1),]
           model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),meancr=mean(cr),
                                                                                                 meanCl=mean(T),varCl=var(T),meanq=mean(q),varR0=var(R0),.groups="keep")
+          #temp_list[[paste0(location_index)]][[paste0(sims)]][[paste0(mismatch)]]=model_means_temp
           model_means<-bind_rows(model_means,model_means_temp)
+          
         }
       }
       #     
@@ -146,7 +149,7 @@ integration_general<-function(parms,sims,time){
           temp_extra[,"country"]<-location_index
           temp<-cbind(temp,temp_extra)
           temp<-as_tibble(temp)
-          temp<-temp[which(year>1),]
+          #temp<-temp[which(year>1),]
           model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),meancr=mean(cr),
                                                                                                 meanCl=mean(RH),varCl=var(RH),meanq=mean(q),varR0=var(R0),.groups="keep")
           # 
@@ -165,8 +168,10 @@ integration_general<-function(parms,sims,time){
           # #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           # #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           
-          model_means<-bind_rows(model_means,model_means_temp)
-          #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
+         model_means<-bind_rows(model_means,model_means_temp)
+        #  temp_list[[paste0(location_index)]][[paste0(sims)]][[paste0(mismatch)]]=model_means_temp
+          
+           #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           
           #png(paste0("../../Results/Plots/model_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
@@ -208,15 +213,18 @@ integration_general<-function(parms,sims,time){
           temp_extra[,"country"]<-location_index
           temp<-cbind(temp,temp_extra)
           temp<-as_tibble(temp)
-          temp<-temp[which(year>1),]
+       #   temp<-temp[which(year>1),]
           
           model_means_temp<- temp %>% group_by(country,week,mismatch,combination) %>% summarise(meanI=mean(I/(S+E+I+R)),varI=var(I/(S+E+I+R)),meanR0=mean(R0),meancr=mean(cr),
                                                                                                 meanCl=mean(AH),varCl=var(AH),meanq=mean(q),varR0=var(R0),.groups="keep")
           #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           #    names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           
+          #temp_list[[paste0(location_index)]][[paste0(sims)]][[paste0(mismatch)]]=model_means_temp
+          
+          #data
           model_means<-bind_rows(model_means,model_means_temp)
-          #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
+         # #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           
           
@@ -224,7 +232,8 @@ integration_general<-function(parms,sims,time){
       }
     }
   }
-  model_means<-model_means[-1,]
+  #model_means<-model_means[-1,]
+  
   return(model_means)
 }
 

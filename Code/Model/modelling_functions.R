@@ -230,6 +230,30 @@ SEIR_model <- function(time, values, parms) {
   list(c(dS, dE, dI, dR))
 }
 
+SEIR_model_quicker <- function(time, values, parms) {
+  #function where c changes with the climate and humidity at each timepoint
+  #initial values
+  
+  
+  #find climate given time
+  Climate <- Climate_Time_Function(time=time ,min=parms[["Climate_Variables"]][["range_C"]][1],max=parms[["Climate_Variables"]][["range_C"]][2],time_at_peak = parms[["Climate_Variables"]][["time_at_peak"]])   
+  
+  cr_value=cr_climate_quick(Climate =  Climate,Max_Coordinates_cr = c(parms[["Climate_Variables"]][["Max_Climate_cr"]],parms[["Max_cr"]]), s=parms[["Climate_Variables"]][["s"]])
+  
+  q_value= q_climate(q0=parms[["q0"]],g=parms[["g"]], Climate=Climate)
+  beta_value = beta(c_r = cr_value,q =q_value ,d = parms[["d"]],h =parms[["h"]] ,epsilon =parms[["epsilon"]] )    
+  currentpop<-values[1]+values[2]+values[3]+values[4]
+  #seir model
+  infectives<-beta_value * values[3] * values[1] / (currentpop)
+  dS = parms[["nu"]] * (currentpop) - infectives - parms[["mu"]] * values[1] + parms[["f"]] * values[4]
+  dE = infectives - (parms[["sigma"]] + parms[["mu"]]) * values[2]
+  dI = parms[["sigma"]] * values[2] - (parms[["mu"]] + parms[["gamma"]]) * values[3] * (1/(1-parms[["p"]]))
+  dR = parms[["gamma"]] * values[3] - parms[["mu"]] * values[4] - parms[["f"]] * values[4]
+  
+  
+  list(c(dS, dE, dI, dR))
+}
+
 
 #plottime <- function(out) {
   #plotting seir components over time
