@@ -342,44 +342,6 @@ run_integration_covid<-function(parms,sims_range){
     extra<-parms[["extra"]]
     model_means<-integration_general(parms,sims,time)
     write.csv(model_means,paste0("../../Results/fromfunction/covid",sims,parms[["climate_label"]],extra,".csv"))
-    correlation_df<-correlation_function(model_means,parms)
-    write.csv(correlation_df,paste0("../../Results/fromfunction/cors/covid",sims,parms[["climate_label"]],"correlation_dataframe",extra,".csv"))
-    
-    bests<-correlation_df %>% group_by(country) %>% summarise(best=mismatch[which.max(corsI)],.groups="keep")
-    
-    correlation_df_means<-as_tibble(correlation_df) %>% group_by(mismatch) %>% summarise(means=mean(corsI),errors=std(corsI),.groups="keep")
-    correlation_df_means_country<-as_tibble(correlation_df) %>% group_by(mismatch,lat,maxs,mins,time_max,pop) %>% summarise(means=mean(corsI),errors=std(corsI),.groups="keep")
-    
-    
-    
-    png(paste0("../../Results/Plots/boxandwhisker",sims,parms[["climate_label"]],extra,".png"))
-    print(ggplot(data=correlation_df, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot())
-    graphics.off()
-    
-    png(paste0("../../Results/Plots/erros",sims,parms[["climate_label"]],extra,".png"))
-    print(ggplot(data=correlation_df_means, aes(x= as.factor(mismatch),y= means)) +geom_point()+
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors)))
-    graphics.off()
-    
-    png(paste0("../../Results/Plots/lats",sims,parms[["climate_label"]],extra,".png"))
-    print(ggplot(data=correlation_df_means_country, aes(x= abs(lat), col=as.factor(mismatch),y= means)) +geom_point()+
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors))+labs(col="Mismatch") )
-    graphics.off()
-    
-    pdf(paste0("../../Results/Plots/boxandwhisker",sims,parms[["climate_label"]],extra,".pdf"))
-    print(ggplot(data=correlation_df, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot()  +theme_bw()+xlab("Mismatch") +ylab("Mean Correlation"))
-    graphics.off()
-    
-    pdf(paste0("../../Results/Plots/erros",sims,parms[["climate_label"]],extra,".pdf"))
-    print(ggplot(data=correlation_df_means, aes(x= as.factor(mismatch),y= means)) +geom_point()+theme_bw()+
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors))+xlab("Mismatch") +ylab("Mean Correlation"))
-    graphics.off()
-    
-    pdf(paste0("../../Results/Plots/lats",sims,parms[["climate_label"]],extra,".pdf"))
-    print(ggplot(data=correlation_df_means_country, aes(x= abs(lat), col=as.factor(mismatch),y= means))+geom_point()+theme_bw()+labs(col="Mismatch") +
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors)) +xlab("Absolute Value of Latitude") +ylab("Mean Correlation"))
-    graphics.off()
-    
   }
 }
 

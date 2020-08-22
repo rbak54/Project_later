@@ -6,6 +6,32 @@ source("latincube.R")
 source("data_sorting.R")
 source("gazeteer.R")
 
+
+beta_short<-function(q0,g,d,h,epsilon,Max_Coordinates_cr,time, s,min,max,time_at_peak){
+  Climate=((max-min)/2 * cos((2 * pi / 365)* (time - time_at_peak ) ) + (max+min)/2)
+  q=(q0*exp(g*Climate))
+  return((sqrt(2 * pi) * s * Max_Coordinates_cr[2] * (1 / (sqrt(2 * pi) * s))*exp((-(Climate - Max_Coordinates_cr[1]) ^ 2) / (2 * s ^ 2))) * epsilon *  (( (-1 / q) * (1 - exp( q * d)))/((- 1 / q) * (1 - exp( q * d)) + h)))
+}
+SEIR_model_quicker <- function(time, values, parms) {
+  #function where c changes with the climate and humidity at each timepoint
+  #initial values
+  
+  #find climate given time
+  beta_value = beta_short(time=time,Max_Coordinates_cr = c(parms[["Climate_Variables"]][["Max_Climate_cr"]],parms[["Max_cr"]]), s=parms[["Climate_Variables"]][["s"]],d = parms[["d"]],h =parms[["h"]] ,epsilon =parms[["epsilon"]],min=parms[["Climate_Variables"]][["range_C"]][1],max=parms[["Climate_Variables"]][["range_C"]][2],time_at_peak = parms[["Climate_Variables"]][["time_at_peak"]],q0=parms[["q0"]],g=parms[["g"]] )    
+  currentpop<-values[1]+values[2]+values[3]+values[4]
+  #seir model
+  infectives<-beta_value * values[3] * values[1] / (currentpop)
+  dS = parms[["nu"]] * (currentpop) - infectives - parms[["mu"]] * values[1] + parms[["f"]] * values[4]
+  dE = infectives - (parms[["sigma"]] + parms[["mu"]]) * values[2]
+  dI = parms[["sigma"]] * values[2] - (parms[["mu"]] + parms[["gamma"]]) * values[3] * (1/(1-parms[["p"]]))
+  dR = parms[["gamma"]] * values[3] - parms[["mu"]] * values[4] - parms[["f"]] * values[4]
+  
+  
+  list(c(dS, dE, dI, dR))
+}
+
+
+
 data_wider_means_summ<-read.csv("../../Data/data_wider_means_summ_POP.csv")
 data_wider_summ<-read.csv("../../Data/data_wider_summ_POP.csv")
 data_wider_means<-read.csv("../../Data/data_wider_means_POP.csv")
@@ -15,7 +41,7 @@ latlong=read.csv("../../Data/latlong/latlong_sel_short.csv")
 pop<-read.csv("../../Data/population/API_SP.POP.TOTL_DS2_en_csv_v2_1217749/populations_sel.csv")
 
 
-ranges_all<-c(min(data_wider_means_summ$minT),max(data_wider_means_summ$minT))
+
 
 integration_general<-function(parms,sims,time){
   if (sims>1){
@@ -333,74 +359,24 @@ run_integration<-function(parms,sims_range){
     
   }
 }
-
-run_integration_covid<-function(parms,sims_range){
-  for (sss in sims_range){
-    
-    sims=sss
-    time = seq(1,365*11, by=1)
-    extra<-parms[["extra"]]
-    model_means<-integration_general(parms,sims,time)
-    write.csv(model_means,paste0("../../Results/fromfunction/covid",sims,parms[["climate_label"]],extra,".csv"))
-    correlation_df<-correlation_function(model_means,parms)
-    write.csv(correlation_df,paste0("../../Results/fromfunction/cors/covid",sims,parms[["climate_label"]],"correlation_dataframe",extra,".csv"))
-    
-    bests<-correlation_df %>% group_by(country) %>% summarise(best=mismatch[which.max(corsI)],.groups="keep")
-    
-    correlation_df_means<-as_tibble(correlation_df) %>% group_by(mismatch) %>% summarise(means=mean(corsI),errors=std(corsI),.groups="keep")
-    correlation_df_means_country<-as_tibble(correlation_df) %>% group_by(mismatch,lat,maxs,mins,time_max,pop) %>% summarise(means=mean(corsI),errors=std(corsI),.groups="keep")
-    
-    
-    
-    png(paste0("../../Results/Plots/boxandwhisker",sims,parms[["climate_label"]],extra,".png"))
-    print(ggplot(data=correlation_df, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot())
-    graphics.off()
-    
-    png(paste0("../../Results/Plots/erros",sims,parms[["climate_label"]],extra,".png"))
-    print(ggplot(data=correlation_df_means, aes(x= as.factor(mismatch),y= means)) +geom_point()+
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors)))
-    graphics.off()
-    
-    png(paste0("../../Results/Plots/lats",sims,parms[["climate_label"]],extra,".png"))
-    print(ggplot(data=correlation_df_means_country, aes(x= abs(lat), col=as.factor(mismatch),y= means)) +geom_point()+
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors))+labs(col="Mismatch") )
-    graphics.off()
-    
-    pdf(paste0("../../Results/Plots/boxandwhisker",sims,parms[["climate_label"]],extra,".pdf"))
-    print(ggplot(data=correlation_df, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot()  +theme_bw()+xlab("Mismatch") +ylab("Mean Correlation"))
-    graphics.off()
-    
-    pdf(paste0("../../Results/Plots/erros",sims,parms[["climate_label"]],extra,".pdf"))
-    print(ggplot(data=correlation_df_means, aes(x= as.factor(mismatch),y= means)) +geom_point()+theme_bw()+
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors))+xlab("Mismatch") +ylab("Mean Correlation"))
-    graphics.off()
-    
-    pdf(paste0("../../Results/Plots/lats",sims,parms[["climate_label"]],extra,".pdf"))
-    print(ggplot(data=correlation_df_means_country, aes(x= abs(lat), col=as.factor(mismatch),y= means))+geom_point()+theme_bw()+labs(col="Mismatch") +
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors)) +xlab("Absolute Value of Latitude") +ylab("Mean Correlation"))
-    graphics.off()
-    
-  }
-}
-
 #sims=160
 sims=1
-sims_range<-c(1,100)
+sims_range<-c(1)
 
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="Temperature",extra="",
               g=0.085,q0=-9.079,Climate_Variables=NA)
 a<-Sys.time()
-#run_integration(parms,sims_range)
+run_integration(parms,sims_range)
 print(Sys.time()-a)
 sims_range<-c(100)
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = 1, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="RH",
               g=0.0209,q0=-21.98,Climate_Variables=NA) 
 a<-Sys.time()
-#run_integration(parms,sims_range)
+run_integration(parms,sims_range)
 print(Sys.time()-a)
-#sims_range<-c(1,100)
+sims_range<-c(1,100)
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="AH",extra="",
               g=0.062,q0=-30.162,Climate_Variables=NA)
@@ -410,11 +386,7 @@ a<-Sys.time()
 run_integration(parms,sims_range)
 print(Sys.time()-a)
 
-parms = list( mu = 2.06e-5,sigma = 1/5 ,p = 0.01, gamma =1/21,f=0.05,
-              N = NA, nu = 5.07e-5, h=0.25/24 ,epsilon= 0.01, d=4/24,Max_cr=26.97,climate_label="Temperature",
-              g=0.07841,q0=-0.2557,Climate_Variables=NA)
-sims_range=c(1,10)
-run_integration_covid(parms,sims_range)
+
 
 # #using data to plot
 #model_means<-read.csv(paste0("../../Results/fromfunction/",sims,parms[["climate_label"]],".csv"))

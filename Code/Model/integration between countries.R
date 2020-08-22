@@ -14,8 +14,50 @@ population_deyle<-read.csv("../../Data/population/API_SP.POP.TOTL_DS2_en_csv_v2_
 latlong=read.csv("../../Data/latlong/latlong_sel_short.csv")
 pop<-read.csv("../../Data/population/API_SP.POP.TOTL_DS2_en_csv_v2_1217749/populations_sel.csv")
 
+cr_climate <- function(Max_Coordinates_cr, range_C, Climate,s) {
+  
+  range_C<-c(min(data_wider_means_summ$minT),max(data_wider_means_summ$maxT))
+  
+  
+  if (abs(Max_Coordinates_cr[1]-range_C[1])>abs(Max_Coordinates_cr[1]-range_C[2])){
+    s = (-(range_C[1] - Max_Coordinates_cr[1]) / 1.96)
+  }else{
+    s = ((range_C[2] - Max_Coordinates_cr[1]) / 1.96)
+  }
+  #finds d at T values for given parameters (contact finds equation using duration_normal_scaled)
+  #t_range_C not strictly needed 
+  #return(mean_duration(T = T,m = c(temp_at_max, max_mean_contact), c = quantile_95, T_range_C = range_C, stype=stype))
+  return(sqrt(2 * pi) * s * Max_Coordinates_cr[2] * (1 / (sqrt(2 * pi) * s))*exp((-(Climate - Max_Coordinates_cr[1]) ^ 2) / (2 * s ^ 2)))
+}
 
-ranges_all<-c(min(data_wider_means_summ$minT),max(data_wider_means_summ$minT))
+
+SEIR_model_quicker <- function(time, values, parms) {
+  #function where c changes with the climate and humidity at each timepoint
+  #initial values
+  
+  
+  #find climate given time
+  Climate <- Climate_Time_Function(time=time ,min=parms[["Climate_Variables"]][["range_C"]][1],max=parms[["Climate_Variables"]][["range_C"]][2],time_at_peak = parms[["Climate_Variables"]][["time_at_peak"]])   
+  
+  cr_value=cr_climate(Climate =  Climate,Max_Coordinates_cr = c(parms[["Climate_Variables"]][["Max_Climate_cr"]],parms[["Max_cr"]]), s=parms[["Climate_Variables"]][["s"]])
+  
+  q_value= q_climate(q0=parms[["q0"]],g=parms[["g"]], Climate=Climate)
+  beta_value = beta(c_r = cr_value,q =q_value ,d = parms[["d"]],h =parms[["h"]] ,epsilon =parms[["epsilon"]] )    
+  currentpop<-values[1]+values[2]+values[3]+values[4]
+  #seir model
+  infectives<-beta_value * values[3] * values[1] / (currentpop)
+  dS = parms[["nu"]] * (currentpop) - infectives - parms[["mu"]] * values[1] + parms[["f"]] * values[4]
+  dE = infectives - (parms[["sigma"]] + parms[["mu"]]) * values[2]
+  dI = parms[["sigma"]] * values[2] - (parms[["mu"]] + parms[["gamma"]]) * values[3] * (1/(1-parms[["p"]]))
+  dR = parms[["gamma"]] * values[3] - parms[["mu"]] * values[4] - parms[["f"]] * values[4]
+  
+  
+  list(c(dS, dE, dI, dR))
+}
+
+
+
+
 
 integration_general<-function(parms,sims,time){
   if (sims>1){
@@ -23,6 +65,7 @@ integration_general<-function(parms,sims,time){
     write.csv(Y,"../../Data/latincube.csv")
   }else{
     Y<-as.data.frame(matrix(c(parms[["epsilon"]],parms[["h"]],parms[["mu"]],parms[["f"]]),nrow=1))
+    
     colnames(Y)<-c("epsilon","h","mu","f")
     
     print("estimated parameters used")
@@ -111,7 +154,7 @@ integration_general<-function(parms,sims,time){
       #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meantemp")
       #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meantemp")
       
-      #png(paste0("../../Results/Plots/model_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
+      #png(paste0("../../Results/Plots/SILmodel_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
       #plottime(temp)
       #graphics.off()
       
@@ -169,7 +212,7 @@ integration_general<-function(parms,sims,time){
           #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
           
-          #png(paste0("../../Results/Plots/model_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
+          #png(paste0("../../Results/Plots/SILmodel_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
           #plottime(RH)
           #graphics.off()
         }
@@ -192,7 +235,7 @@ integration_general<-function(parms,sims,time){
           }
           parms_temp[["Climate_Variables"]][["s"]]=s
           temp = ode(    y = start,    time = time,    func = SEIR_model_quicker,    parms = parms_temp)
-          #  png(paste0("../../Results/Plots/model_series/AH",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
+          #  png(paste0("../../Results/Plots/SILmodel_series/AH",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
           #  plottime(temp)
           # graphics.off()
           temp_extra<-matrix(rep(c(location_index,data_wider_means_summ[location_index,"minAH"],data_wider_means_summ[location_index,"maxAH"],data_wider_means_summ[location_index,"peakAH"],mismatch,NA,NA,NA,NA,NA,combination)),nrow=nrow(temp),ncol=extra_cols,byrow=T)
@@ -292,9 +335,9 @@ run_integration<-function(parms,sims_range){
     time = seq(1,365*11, by=1)
     extra<-parms[["extra"]]
     model_means<-integration_general(parms,sims,time)
-    write.csv(model_means,paste0("../../Results/fromfunction/",sims,parms[["climate_label"]],extra,".csv"))
+    write.csv(model_means,paste0("../../Results/fromfunction/SIL",sims,parms[["climate_label"]],extra,".csv"))
     correlation_df<-correlation_function(model_means,parms)
-    write.csv(correlation_df,paste0("../../Results/fromfunction/cors/",sims,parms[["climate_label"]],"correlation_dataframe",extra,".csv"))
+    write.csv(correlation_df,paste0("../../Results/fromfunction/cors/SIL",sims,parms[["climate_label"]],"correlation_dataframe",extra,".csv"))
     
     bests<-correlation_df %>% group_by(country) %>% summarise(best=mismatch[which.max(corsI)],.groups="keep")
     
@@ -303,104 +346,54 @@ run_integration<-function(parms,sims_range){
     
     
     
-    png(paste0("../../Results/Plots/boxandwhisker",sims,parms[["climate_label"]],extra,".png"))
+    png(paste0("../../Results/Plots/SILboxandwhisker",sims,parms[["climate_label"]],extra,".png"))
     print(ggplot(data=correlation_df, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot())
     graphics.off()
     
-    png(paste0("../../Results/Plots/erros",sims,parms[["climate_label"]],extra,".png"))
+    png(paste0("../../Results/Plots/SILerros",sims,parms[["climate_label"]],extra,".png"))
     print(ggplot(data=correlation_df_means, aes(x= as.factor(mismatch),y= means)) +geom_point()+
             geom_errorbar(aes(ymin=means+errors,ymax=means-errors)))
     graphics.off()
     
-    png(paste0("../../Results/Plots/lats",sims,parms[["climate_label"]],extra,".png"))
+    png(paste0("../../Results/Plots/SILlats",sims,parms[["climate_label"]],extra,".png"))
     print(ggplot(data=correlation_df_means_country, aes(x= abs(lat), col=as.factor(mismatch),y= means)) +geom_point()+
             geom_errorbar(aes(ymin=means+errors,ymax=means-errors))+labs(col="Mismatch") )
     graphics.off()
     
-    pdf(paste0("../../Results/Plots/boxandwhisker",sims,parms[["climate_label"]],extra,".pdf"))
+    pdf(paste0("../../Results/Plots/SILboxandwhisker",sims,parms[["climate_label"]],extra,".pdf"))
     print(ggplot(data=correlation_df, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot()  +theme_bw()+xlab("Mismatch") +ylab("Mean Correlation"))
     graphics.off()
     
-    pdf(paste0("../../Results/Plots/erros",sims,parms[["climate_label"]],extra,".pdf"))
+    pdf(paste0("../../Results/Plots/SILerros",sims,parms[["climate_label"]],extra,".pdf"))
     print(ggplot(data=correlation_df_means, aes(x= as.factor(mismatch),y= means)) +geom_point()+theme_bw()+
             geom_errorbar(aes(ymin=means+errors,ymax=means-errors))+xlab("Mismatch") +ylab("Mean Correlation"))
     graphics.off()
     
-    pdf(paste0("../../Results/Plots/lats",sims,parms[["climate_label"]],extra,".pdf"))
+    pdf(paste0("../../Results/Plots/SILlats",sims,parms[["climate_label"]],extra,".pdf"))
     print(ggplot(data=correlation_df_means_country, aes(x= abs(lat), col=as.factor(mismatch),y= means))+geom_point()+theme_bw()+labs(col="Mismatch") +
             geom_errorbar(aes(ymin=means+errors,ymax=means-errors)) +xlab("Absolute Value of Latitude") +ylab("Mean Correlation"))
     graphics.off()
     
   }
 }
-
-run_integration_covid<-function(parms,sims_range){
-  for (sss in sims_range){
-    
-    sims=sss
-    time = seq(1,365*11, by=1)
-    extra<-parms[["extra"]]
-    model_means<-integration_general(parms,sims,time)
-    write.csv(model_means,paste0("../../Results/fromfunction/covid",sims,parms[["climate_label"]],extra,".csv"))
-    correlation_df<-correlation_function(model_means,parms)
-    write.csv(correlation_df,paste0("../../Results/fromfunction/cors/covid",sims,parms[["climate_label"]],"correlation_dataframe",extra,".csv"))
-    
-    bests<-correlation_df %>% group_by(country) %>% summarise(best=mismatch[which.max(corsI)],.groups="keep")
-    
-    correlation_df_means<-as_tibble(correlation_df) %>% group_by(mismatch) %>% summarise(means=mean(corsI),errors=std(corsI),.groups="keep")
-    correlation_df_means_country<-as_tibble(correlation_df) %>% group_by(mismatch,lat,maxs,mins,time_max,pop) %>% summarise(means=mean(corsI),errors=std(corsI),.groups="keep")
-    
-    
-    
-    png(paste0("../../Results/Plots/boxandwhisker",sims,parms[["climate_label"]],extra,".png"))
-    print(ggplot(data=correlation_df, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot())
-    graphics.off()
-    
-    png(paste0("../../Results/Plots/erros",sims,parms[["climate_label"]],extra,".png"))
-    print(ggplot(data=correlation_df_means, aes(x= as.factor(mismatch),y= means)) +geom_point()+
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors)))
-    graphics.off()
-    
-    png(paste0("../../Results/Plots/lats",sims,parms[["climate_label"]],extra,".png"))
-    print(ggplot(data=correlation_df_means_country, aes(x= abs(lat), col=as.factor(mismatch),y= means)) +geom_point()+
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors))+labs(col="Mismatch") )
-    graphics.off()
-    
-    pdf(paste0("../../Results/Plots/boxandwhisker",sims,parms[["climate_label"]],extra,".pdf"))
-    print(ggplot(data=correlation_df, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot()  +theme_bw()+xlab("Mismatch") +ylab("Mean Correlation"))
-    graphics.off()
-    
-    pdf(paste0("../../Results/Plots/erros",sims,parms[["climate_label"]],extra,".pdf"))
-    print(ggplot(data=correlation_df_means, aes(x= as.factor(mismatch),y= means)) +geom_point()+theme_bw()+
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors))+xlab("Mismatch") +ylab("Mean Correlation"))
-    graphics.off()
-    
-    pdf(paste0("../../Results/Plots/lats",sims,parms[["climate_label"]],extra,".pdf"))
-    print(ggplot(data=correlation_df_means_country, aes(x= abs(lat), col=as.factor(mismatch),y= means))+geom_point()+theme_bw()+labs(col="Mismatch") +
-            geom_errorbar(aes(ymin=means+errors,ymax=means-errors)) +xlab("Absolute Value of Latitude") +ylab("Mean Correlation"))
-    graphics.off()
-    
-  }
-}
-
 #sims=160
 sims=1
-sims_range<-c(1,100)
+sims_range<-c(1)
 
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="Temperature",extra="",
               g=0.085,q0=-9.079,Climate_Variables=NA)
 a<-Sys.time()
-#run_integration(parms,sims_range)
+run_integration(parms,sims_range)
 print(Sys.time()-a)
 sims_range<-c(100)
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = 1, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="RH",
               g=0.0209,q0=-21.98,Climate_Variables=NA) 
 a<-Sys.time()
-#run_integration(parms,sims_range)
+run_integration(parms,sims_range)
 print(Sys.time()-a)
-#sims_range<-c(1,100)
+sims_range<-c(1,100)
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="AH",extra="",
               g=0.062,q0=-30.162,Climate_Variables=NA)
@@ -410,11 +403,7 @@ a<-Sys.time()
 run_integration(parms,sims_range)
 print(Sys.time()-a)
 
-parms = list( mu = 2.06e-5,sigma = 1/5 ,p = 0.01, gamma =1/21,f=0.05,
-              N = NA, nu = 5.07e-5, h=0.25/24 ,epsilon= 0.01, d=4/24,Max_cr=26.97,climate_label="Temperature",
-              g=0.07841,q0=-0.2557,Climate_Variables=NA)
-sims_range=c(1,10)
-run_integration_covid(parms,sims_range)
+
 
 # #using data to plot
 #model_means<-read.csv(paste0("../../Results/fromfunction/",sims,parms[["climate_label"]],".csv"))
@@ -515,7 +504,7 @@ run_integration_covid(parms,sims_range)
 # correlation_df <- correlation_df %>%  summarise(corsI=correlations(meanI,unique(country)),corsR=correlations(meanR0,unique(country)),maxs=max(meanCl),mins=min(meanCl),means=mean(meanCl),.groups="keep")
 # #correlation_df$mismatch<-as.factor(correlation_df$mismatch)
 # #for (i in unique(correlation_df$combination)){
-# #  png(paste0("../../Results/Plots/comboplots/",i,".png"))
+# #  png(paste0("../../Results/Plots/SILcomboplots/",i,".png"))
 # #  toplot<-correlation_df[which(correlation_df$combination==i),]
 # # plot(toplot$mismatch,toplot$cors)
 # #  graphics.off()
@@ -582,7 +571,7 @@ run_integration_covid(parms,sims_range)
 #     #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
 #     #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
 #     
-#     #png(paste0("../../Results/Plots/model_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
+#     #png(paste0("../../Results/Plots/SILmodel_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
 #     #plottime(RH)
 #     #graphics.off()
 #   }
@@ -643,7 +632,7 @@ run_integration_covid(parms,sims_range)
 #       #names(model_means)<-c("country","week","mismatch","meanI","meanR0","meanCl")
 #       #names(model_means_temp)<-c("country","week","mismatch","meanI","meanR0","meanCl")
 #       
-#       #png(paste0("../../Results/Plots/model_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
+#       #png(paste0("../../Results/Plots/SILmodel_series/",data_wider_means_summ[location_index,"country"],gsub("\\.","",mismatch),".png"))
 #       #plottime(RH)
 #       #graphics.off()
 #     }
