@@ -315,7 +315,7 @@ graphics.off()
  graphics.off()
 # 
 # 
-# trop<-covid_means[which(covid_means$Region=="Southern"),]
+ trop<-covid_means[which(covid_means$Region=="Southern"),]
 trop<-trop[which(trop$shift==0),]
 # 
  noshift<-covid_means[which(covid_means$shift==0),]
@@ -340,9 +340,14 @@ trop<-trop[which(trop$shift==0),]
  print(ggplot(data=covid_means_summ,aes(y=peakI,x=Region))+geom_boxplot()+theme_bw()+ylab("Week of Maximal I")+xlab("Region")+
          theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
  graphics.off()
-
+ 
+ summs<-covid_means_summ %>% group_by(Region) %>% summarise(meanweek=mean(peakweek),errweek=std(peakweek),.groups="keep")
+ write.csv(summs,paste0("../../Writeup/covidpeekweek",sims,".csv"))
 
 #Variance
+ parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
+               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",
+               g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Temperature")
 correlation_df<-read.csv("../../Results/fromfunction/cors/var1Temperaturecorrelation_dataframe.csv")
 correlation_df$Region<-cut(correlation_df$lat,breaks=c(min(correlation_df$lat)-1,-23.5,23.5,max(correlation_df$lat)+1), labels=c("Southern","Tropics","Northern"))
 correlation_df$Region_Combined<-cut(abs(correlation_df$lat),breaks=c(0,23.5,max(abs(correlation_df$lat)+1)), labels=c("Tropics","Temperate"))
