@@ -16,6 +16,12 @@ getmode <- function(v) {
   uniqv <- unique(v)
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
+
+require("cowplot")
+
+library(gridExtra)
+library(grid)
+
 data_wider_means_summ<-read.csv("../../Data/data_wider_means_summ_POP.csv")
 data_wider_means<-read.csv("../../Data/data_wider_means_POP.csv")
 
@@ -61,12 +67,12 @@ plot_influenza<-function(parms,sims){
   #correlation_df_means<-as_tibble(correlation_df) %>% group_by(mismatch) %>% summarise(means=mean(corsI),errors=std(corsI),.groups="keep")
   pdf(paste0("../../Writeup/",sims,parms[["climate_label"]],"rangelat.pdf"))
   print(ggplot(data=correlation_df_means_country, aes(x= abs(lat) ,y=maxs-mins))+geom_point()+xlab("Absolute Value of Latitude")+theme_bw()+ylab(paste0(parms[["climate_label_long"]]," Range"))+
-          theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
+          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
   graphics.off()
   
   pdf(paste0("../../Writeup/boxandwhisker_facet",sims,parms[["climate_label"]],".pdf"),width= 10,height= 5)
   print(ggplot(data=correlation_df, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot()  +theme_bw()+xlab("Mismatch") +ylab("Mean Correlation")+
-          theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) +facet_wrap(~Region_Combined))
+          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) +facet_wrap(~Region_Combined))
   graphics.off() 
   
   
@@ -86,23 +92,23 @@ plot_influenza<-function(parms,sims){
   pdf(paste0("../../Writeup/mismatchseverity_meanmeanI",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 5)
   print(ggplot(data=m,aes(mismatch,mI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Mean Proportion Infected")+xlab("Mismatch")+
           geom_errorbar(aes(ymin=mI-smI,ymax=mI+smI))+scale_y_continuous()+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=1/(len_mismatch-1)))+
-          theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
+          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "top",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) +labs(colour="Region")
   graphics.off()
   pdf(paste0("../../Writeup/mismatchseverity_meanmeanro",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 5)
   print(ggplot(data=m,aes(mismatch,mR,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Mean R0 Infected")+xlab("Mismatch")+
-          geom_errorbar(aes(ymin=mR-smR,ymax=mR+smR))+scale_y_continuous()+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=1/(len_mismatch-1)))+
-          theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
+          geom_errorbar(aes(ymin=mR-smR,ymax=mR+smR))+scale_y_continuous()+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=1/(len_mismatch-1)))+labs(colour="Region")+
+          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
   graphics.off()
   pdf(paste0("../../Writeup/mismatchseverity_maxmeanI",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 5)
   print(ggplot(data=m,aes(mismatch,maI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum Proportion Infected")+xlab("Mismatch")+
-          geom_errorbar(aes(ymin=maI-smaI,ymax=maI+smaI))+scale_y_continuous()+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=1/(len_mismatch-1)))+
-          theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
+          geom_errorbar(aes(ymin=maI-smaI,ymax=maI+smaI))+scale_y_continuous()+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=1/(len_mismatch-1)))+labs(colour="Region")+
+          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
   graphics.off()
   
   pdf(paste0("../../Writeup/mismatchseverity_maxmeanro",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 5)
   print(ggplot(data=m,aes(mismatch,maR,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum R0 Infected")+xlab("Mismatch")+
-          geom_errorbar(aes(ymin=maR-smaR,ymax=maR+smaR))+scale_y_continuous()+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=1/(len_mismatch-1)))+
-          theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
+          geom_errorbar(aes(ymin=maR-smaR,ymax=maR+smaR))+scale_y_continuous()+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=1/(len_mismatch-1)))+labs(colour="Region")+
+          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
   graphics.off()
 
   #   #for some reason mean AH is a good predictor of mismatch????????    
@@ -168,15 +174,15 @@ plot_influenza<-function(parms,sims){
     
     p <- p + geom_line(aes(y = mult*data, colour = "Data"))
     
-    p <- p + scale_y_continuous(sec.axis = sec_axis(~./mult, name = "Data Flu Cases"))
+    p <- p + scale_y_continuous(sec.axis = sec_axis(~./mult, name = "per Capita Flu Cases from Data"))
 
     p <- p + labs(x = "Week",
-                 y = "Model Number of Infectious", colour="") +theme_bw()
+                 y = "Proportion of Infected Individuals in Model", colour="") +theme_bw()
     #p <- p + labs(x = "Week",
     #              y = "Model Number of Infectious") +theme_bw()
     
     p<-p+  scale_colour_manual(values=cbPalette)
-    p<-p+theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
+    p<-p+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "top",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
     
     print(p)
     graphics.off()
@@ -232,20 +238,24 @@ plot_influenza(parms,sims=100)#need t oredo rh with proportion
 
 pdf(paste0("../../Writeup/AHtemp.pdf"))
 ggplot(data_wider_means,aes(meantemp,meanAH ))+geom_point()+theme_bw()+ylab("Absolute Humidity")+xlab("Temperature")+
-  theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
 graphics.off()#covid_plots(parms)
 
 pdf(paste0("../../Writeup/RHtemp.pdf"))
 ggplot(data_wider_means,aes(meantemp,meanRH ))+geom_point()+theme_bw()+ylab("Relative Humidity")+xlab("Temperature")+
-  theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
 graphics.off()#covid_plots(parms)
 
 
+parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
+              N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",
+              g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Temperature")
+sims=1
 IT<-data_wider_means[data_wider_means$country=="Italy",]
 
 C<-seq(min(IT$meantemp),max(IT$meantemp),length.out = 1000)
 dummy_dataframe<-as.data.frame(matrix(ncol=5,nrow=length(C)*5))
-colnames(dummy_dataframe)<-c("Climate","Contact_Rate","Survival_Rate","Max_cr","Mismatch")
+colnames(dummy_dataframe)<-c("Temperature","Contact_Rate","Survival_Rate","Max_cr","Mismatch")
 dummy_dataframe$Climate<-rep(C,5)
 range<-seq(min(C),max(C),length.out = 5)
 dummy_dataframe$Max_cr<-rep(range,each=length(C))
@@ -259,16 +269,32 @@ add<-30-max(dummy_dataframe$Survival_Rate,na.rm = T)
 pdf(paste0("../../Writeup/",parms[["climate_label_long"]],"mismatch_vis.pdf"),width=15,height=5)
 
 p<-ggplot(data=dummy_dataframe, aes(Climate,Contact_Rate,col="Contact Rate"))+geom_line()+
-  geom_line(aes(y = Survival_Rate+add, colour = "Survival Rate"))+
-  scale_y_continuous(sec.axis = sec_axis(~.-add, name = "Virus Survival Rate"))+ ylab("Human Contact Rate")+
-  scale_colour_manual(values = c("blue", "red"))+facet_wrap(~Mismatch,nrow=1)+
-  theme_bw()    +theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))
+  geom_line(aes(y = Survival_Rate+add, colour = "Growth Rate"))+scale_x_continuous(breaks = c(5,10,15,20,25))+
+  scale_y_continuous(breaks=c(0,10,20,30),sec.axis = sec_axis(~.-add, name = "Virus Growth Rate (1/day)"))+ ylab("Human Contact Rate (1/day)")+ labs(colour="")+
+  scale_colour_manual(values = c("blue", "red"))+facet_wrap(~Mismatch,nrow=1)+xlab("Temperature")+
+  theme_bw()    +theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "top",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))
+
+print(p)
+graphics.off()
+
+pdf(paste0("../../Writeup/",parms[["climate_label_long"]],"mismatch_vis_mini.pdf"),width=6,height=5)
+dummy_dataframe_mini<-dummy_dataframe[which(dummy_dataframe$Mismatch %in% c(0,1)),]
+p<-ggplot(data=dummy_dataframe_mini, aes(Climate,Contact_Rate,col="Contact Rate"))+geom_line()+
+  geom_line(aes(y = Survival_Rate+add, colour = "Growth Rate"))+scale_x_continuous(breaks = c(5,10,15,20,25))+
+  scale_y_continuous(breaks=c(0,10,20,30),sec.axis = sec_axis(~.-add, name = "Virus Growth Rate (1/day)"))+ ylab("Human Contact Rate (1/day)")+ labs(colour="")+
+scale_colour_manual(values = c("blue", "red"))+facet_wrap(~Mismatch,nrow=1)+xlab("Temperature")+
+  theme_bw()    +theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "top",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))
 
 print(p)
 graphics.off()
 
 
+
+
 #COVID
+
+parms = list( climate_label="Temperature",Climate_Variables=NA,climate_label_long="Temperature")
+sims=1
  covid_means<-read.csv(paste0("../../Results/fromfunction/covid/1temperature_shift.csv"))
  covid_means$lat<-latlong[covid_means$country,"V2"]
  covid_means$country<-data_wider_means_summ[covid_means$country,"country"]
@@ -294,27 +320,35 @@ graphics.off()
  
  pdf(paste0("../../Writeup/shiftseverity_meanmeanI",sims,".pdf"),width=7.5,height= 5)
  print(ggplot(data=m,aes(shift,mI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Mean Proportion Infected")+xlab("Shift")+
-         geom_errorbar(aes(ymin=mI-smI,ymax=mI+smI),width=0.25)+scale_y_continuous()+scale_x_continuous()+
-         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
+         geom_errorbar(aes(ymin=mI-smI,ymax=mI+smI),width=0.25)+scale_y_continuous()+scale_x_continuous()+labs(colour="Region")+
+         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
  graphics.off()
  pdf(paste0("../../Writeup/shiftseverity_meanmeanro",sims,".pdf"),width=7.5,height= 5)
  print(ggplot(data=m,aes(shift,mR,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Mean R0")+xlab("Shift")+
-         geom_errorbar(aes(ymin=mR-smR,ymax=mR+smR))+scale_y_continuous()+scale_x_continuous()+
-         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
+         geom_errorbar(aes(ymin=mR-smR,ymax=mR+smR))+scale_y_continuous()+scale_x_continuous()+labs(colour="Region")+
+         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
  graphics.off()
  pdf(paste0("../../Writeup/shiftseverity_maxmeanI",sims,".pdf"),width=7.5,height= 5)
  print(ggplot(data=m,aes(shift,maI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum Proportion Infected")+xlab("Shift")+
-         geom_errorbar(aes(ymin=maI-smaI,ymax=maI+smaI))+scale_y_continuous()+scale_x_continuous()+
-         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
+         geom_errorbar(aes(ymin=maI-smaI,ymax=maI+smaI))+scale_y_continuous()+scale_x_continuous()+labs(colour="Region")+
+         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
  graphics.off()
  
  pdf(paste0("../../Writeup/shiftseverity_maxmeanro",sims,".pdf"),width=7.5,height= 5)
  print(ggplot(data=m,aes(shift,maR,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum R0")+xlab("Shift")+
-         geom_errorbar(aes(ymin=maR-smaR,ymax=maR+smaR))+scale_y_continuous()+scale_x_continuous()+
-         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
+         geom_errorbar(aes(ymin=maR-smaR,ymax=maR+smaR))+scale_y_continuous()+scale_x_continuous()+labs(colour="Region")+
+         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
  graphics.off()
 # 
-# 
+ leg<-ggplot(data=m,aes(shift,maR,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum R0")+xlab("Shift")+
+   geom_errorbar(aes(ymin=maR-smaR,ymax=maR+smaR))+scale_y_continuous()+scale_x_continuous()+labs(colour="Region")+
+   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "top",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
+ legend <- get_legend(leg)
+ pdf(paste0("../../Writeup/legend.pdf"),width=6,height= 1)
+ grid.newpage()
+ grid.draw(legend) 
+ graphics.off()
+ 
  trop<-covid_means[which(covid_means$Region=="Southern"),]
 trop<-trop[which(trop$shift==0),]
 # 
@@ -325,7 +359,7 @@ trop<-trop[which(trop$shift==0),]
  print(ggplot(data=selected_countries,aes(week,meanR0,group=Country,color=Region))+geom_line()+theme_bw()+ylab("R0")+xlab("Week")+
          theme(legend.position="bottom",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))+facet_wrap(c("Country"),nrow=1)+
          theme(strip.background = element_blank(), strip.text.x = element_blank())+
-         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
+         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
  graphics.off()
  
 # 
@@ -334,17 +368,18 @@ trop<-trop[which(trop$shift==0),]
  covid_means_summ<-covid_means_summ[which(covid_means_summ$shift==0),]
  pdf(paste0("../../Writeup/covidtime_R0_peekweek_",sims,".pdf"),width=10,height=5)
  print(ggplot(data=covid_means_summ,aes(y=peakweek,x=Region))+geom_boxplot()+theme_bw()+ylab("Week of Maximal R0")+xlab("Region")+
-         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
+         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
  graphics.off()
  pdf(paste0("../../Writeup/covidtime_I_peekweek_",sims,".pdf"))
  print(ggplot(data=covid_means_summ,aes(y=peakI,x=Region))+geom_boxplot()+theme_bw()+ylab("Week of Maximal I")+xlab("Region")+
-         theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
+         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
  graphics.off()
  
  summs<-covid_means_summ %>% group_by(Region) %>% summarise(meanweek=mean(peakweek),errweek=std(peakweek),.groups="keep")
  write.csv(summs,paste0("../../Writeup/covidpeekweek",sims,".csv"))
 
 #Variance
+ sims=1
  parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
                N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",
                g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Temperature")
@@ -359,12 +394,12 @@ correlation_df_TE<-correlation_df[which(correlation_df$Region_Combined=="Tempera
 
 pdf(paste0("../../Writeup/boxandwhisker_facet_TR",sims,parms[["climate_label"]],".pdf"),width= 10,height= 5)
 print(ggplot(data=correlation_df_TR, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot()  +theme_bw()+xlab("Mismatch") +ylab("Mean Correlation")+
-        theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) +facet_wrap(~v_scal))
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) +facet_wrap(~v_scal))
 graphics.off() 
 
 pdf(paste0("../../Writeup/boxandwhisker_facet_TE",sims,parms[["climate_label"]],".pdf"),width= 10,height= 5)
 print(ggplot(data=correlation_df_TE, aes(x= as.factor(mismatch),y= corsI)) +geom_boxplot()  +theme_bw()+xlab("Mismatch") +ylab("Mean Correlation")+
-        theme(text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) +facet_wrap(~v_scal))
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) +facet_wrap(~v_scal))
 graphics.off() 
 
 

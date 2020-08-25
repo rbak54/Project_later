@@ -126,9 +126,9 @@ integration_general<-function(parms,sims,time){
           #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
           mismatch<-round(mismatch,2)
           if (abs(i-parms_temp[["Climate_Variables"]][["range_C"]][1])>abs(i-parms_temp[["Climate_Variables"]][["range_C"]][2])){
-            s = (-(parms_temp[["Climate_Variables"]][["range_C"]][1]- i) / 1.96)
+            s = v_scal*(-(parms_temp[["Climate_Variables"]][["range_C"]][1]- i) / 1.96)
           }else{
-            s = ((parms_temp[["Climate_Variables"]][["range_C"]][2] - i) / 1.96)
+            s = v_scal*((parms_temp[["Climate_Variables"]][["range_C"]][2] - i) / 1.96)
           }
           parms_temp[["Climate_Variables"]][["s"]]=s
           temp = ode(    y = start,    time = time,    func = SEIR_model_quicker,    parms = parms_temp)
@@ -187,9 +187,9 @@ integration_general<-function(parms,sims,time){
           #test time<-as.vector(read.csv("../../Results/time.csv"))[,2]
           mismatch<-round(mismatch,2)
           if (abs(i-parms_temp[["Climate_Variables"]][["range_C"]][1])>abs(i-parms_temp[["Climate_Variables"]][["range_C"]][2])){
-            s = (-(parms_temp[["Climate_Variables"]][["range_C"]][1]- i) / 1.96)
+            s = v_scal*(-(parms_temp[["Climate_Variables"]][["range_C"]][1]- i) / 1.96)
           }else{
-            s = ((parms_temp[["Climate_Variables"]][["range_C"]][2] - i) / 1.96)
+            s = v_scal*((parms_temp[["Climate_Variables"]][["range_C"]][2] - i) / 1.96)
           }
           parms_temp[["Climate_Variables"]][["s"]]=s
           temp = ode(    y = start,    time = time,    func = SEIR_model_quicker,    parms = parms_temp)
@@ -377,6 +377,7 @@ a<-Sys.time()
 run_integration(parms,sims_range)
 print(Sys.time()-a)
 sims_range<-c(1,100)
+sims_range<-c(100)
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=26.97,climate_label="AH",extra="",
               g=0.062,q0=-30.162,Climate_Variables=NA,v_scal_range=c(1))
