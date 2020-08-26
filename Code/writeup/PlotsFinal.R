@@ -3,7 +3,7 @@ source("../Model/modelling_functions.R"
 require("tidyverse")
 require("ggplot2")
 
-
+sims_range=c(1,100)
 which_best<-function(country){
   return(data_wider_means[which(data_wider_means$country==country),"meanflu"])
 }  
@@ -89,23 +89,23 @@ plot_influenza<-function(parms,sims){
   plot(bests$Region_Combined,bests$best)  
   tab<-table(bests$best,bests$Region_Combined)
   write.csv(tab/matrix(rep(colSums(tab),5),nrow=5,byrow = T),"../../Writeup/mismatch.csv")
-  pdf(paste0("../../Writeup/mismatchseverity_meanmeanI",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 5)
+  pdf(paste0("../../Writeup/mismatchseverity_meanmeanI",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 7.5)
   print(ggplot(data=m,aes(mismatch,mI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Mean Proportion Infected")+xlab("Mismatch")+
           geom_errorbar(aes(ymin=mI-smI,ymax=mI+smI))+scale_y_continuous()+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=1/(len_mismatch-1)))+
           theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "top",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) +labs(colour="Region")
   graphics.off()
-  pdf(paste0("../../Writeup/mismatchseverity_meanmeanro",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 5)
+  pdf(paste0("../../Writeup/mismatchseverity_meanmeanro",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 7.5)
   print(ggplot(data=m,aes(mismatch,mR,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Mean R0 Infected")+xlab("Mismatch")+
           geom_errorbar(aes(ymin=mR-smR,ymax=mR+smR))+scale_y_continuous()+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=1/(len_mismatch-1)))+labs(colour="Region")+
           theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
   graphics.off()
-  pdf(paste0("../../Writeup/mismatchseverity_maxmeanI",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 5)
+  pdf(paste0("../../Writeup/mismatchseverity_maxmeanI",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 7.5)
   print(ggplot(data=m,aes(mismatch,maI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum Proportion Infected")+xlab("Mismatch")+
           geom_errorbar(aes(ymin=maI-smaI,ymax=maI+smaI))+scale_y_continuous()+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=1/(len_mismatch-1)))+labs(colour="Region")+
           theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
   graphics.off()
   
-  pdf(paste0("../../Writeup/mismatchseverity_maxmeanro",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 5)
+  pdf(paste0("../../Writeup/mismatchseverity_maxmeanro",parms[["climate_label"]],sims,parms[["climate_label"]],".pdf"),width=7.5,height= 7.5)
   print(ggplot(data=m,aes(mismatch,maR,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum R0 Infected")+xlab("Mismatch")+
           geom_errorbar(aes(ymin=maR-smaR,ymax=maR+smaR))+scale_y_continuous()+scale_x_continuous(limits = c(-0.125,1.125), breaks = seq(0,1,by=1/(len_mismatch-1)))+labs(colour="Region")+
           theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15))) 
@@ -214,37 +214,21 @@ plot_influenza<-function(parms,sims){
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="Temperature",
               g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Temperature")
-sims=1
-
-plot_influenza(parms,sims=1)
-
-plot_influenza(parms,sims=100)
+plot_influenza(parms,sims=sims_range[1])
+plot_influenza(parms,sims=sims_range[2])
 
 #covid_plots(parms)
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="RH",
               g=0.085,q0=-9.079,Climate_Variables=NA,climate_label_long="Relative Humidity")
-
-plot_influenza(parms,sims=1)
-
-plot_influenza(parms,sims=100)
+plot_influenza(parms,sims=sims_range[1])
+plot_influenza(parms,sims=sims_range[2])
 #sims=1
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
               N = NA, nu = 5.07e-5, h=0.25 / 24 ,epsilon= 0.05, d=4/24,Max_cr=29.97,climate_label="AH",extra="Absolute Humidity",
               g=0.062,q0=-30.162,Climate_Variables=NA)
-plot_influenza(parms,sims=1)
-plot_influenza(parms,sims=100)#need t oredo rh with proportion
-
-
-pdf(paste0("../../Writeup/AHtemp.pdf"))
-ggplot(data_wider_means,aes(meantemp,meanAH ))+geom_point()+theme_bw()+ylab("Absolute Humidity")+xlab("Temperature")+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
-graphics.off()#covid_plots(parms)
-
-pdf(paste0("../../Writeup/RHtemp.pdf"))
-ggplot(data_wider_means,aes(meantemp,meanRH ))+geom_point()+theme_bw()+ylab("Relative Humidity")+xlab("Temperature")+
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
-graphics.off()#covid_plots(parms)
+plot_influenza(parms,sims=sims_range[1])
+plot_influenza(parms,sims=sims_range[2])
 
 
 parms = list( mu = 2.06e-5,sigma = 0.68 ,p = 0.001, gamma =0.25,f=0.1,
@@ -318,23 +302,23 @@ sims=1
  maxR<-max(m$maR)
  maxI<-max(m$maI)
  
- pdf(paste0("../../Writeup/shiftseverity_meanmeanI",sims,".pdf"),width=7.5,height= 5)
+ pdf(paste0("../../Writeup/shiftseverity_meanmeanI",sims,".pdf"),width=7.5,height= 7.5)
  print(ggplot(data=m,aes(shift,mI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Mean Proportion Infected")+xlab("Shift")+
          geom_errorbar(aes(ymin=mI-smI,ymax=mI+smI),width=0.25)+scale_y_continuous()+scale_x_continuous()+labs(colour="Region")+
          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
  graphics.off()
- pdf(paste0("../../Writeup/shiftseverity_meanmeanro",sims,".pdf"),width=7.5,height= 5)
+ pdf(paste0("../../Writeup/shiftseverity_meanmeanro",sims,".pdf"),width=7.5,height= 7.5)
  print(ggplot(data=m,aes(shift,mR,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Mean R0")+xlab("Shift")+
          geom_errorbar(aes(ymin=mR-smR,ymax=mR+smR))+scale_y_continuous()+scale_x_continuous()+labs(colour="Region")+
          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
  graphics.off()
- pdf(paste0("../../Writeup/shiftseverity_maxmeanI",sims,".pdf"),width=7.5,height= 5)
+ pdf(paste0("../../Writeup/shiftseverity_maxmeanI",sims,".pdf"),width=7.5,height= 7.5)
  print(ggplot(data=m,aes(shift,maI,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum Proportion Infected")+xlab("Shift")+
          geom_errorbar(aes(ymin=maI-smaI,ymax=maI+smaI))+scale_y_continuous()+scale_x_continuous()+labs(colour="Region")+
          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
  graphics.off()
  
- pdf(paste0("../../Writeup/shiftseverity_maxmeanro",sims,".pdf"),width=7.5,height= 5)
+ pdf(paste0("../../Writeup/shiftseverity_maxmeanro",sims,".pdf"),width=7.5,height= 7.5)
  print(ggplot(data=m,aes(shift,maR,group=Region_Combined, colour = Region_Combined))+geom_point()+geom_line()+theme_bw()+ylab("Maximum R0")+xlab("Shift")+
          geom_errorbar(aes(ymin=maR-smaR,ymax=maR+smaR))+scale_y_continuous()+scale_x_continuous()+labs(colour="Region")+
          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),legend.position = "none",text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)))
@@ -402,4 +386,16 @@ print(ggplot(data=correlation_df_TE, aes(x= as.factor(mismatch),y= corsI)) +geom
         theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) +facet_wrap(~v_scal))
 graphics.off() 
 
+
+
+
+pdf(paste0("../../Writeup/AHtemp.pdf"),width=5,height=5)
+ggplot(data_wider_means,aes(meantemp,meanAH ))+geom_point()+theme_bw()+ylab("Absolute Humidity")+xlab("Temperature")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
+graphics.off()#covid_plots(parms)
+
+pdf(paste0("../../Writeup/RHtemp.pdf"),width=5,height=5)
+ggplot(data_wider_means,aes(meantemp,meanRH ))+geom_point()+theme_bw()+ylab("Relative Humidity")+xlab("Temperature")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),text = element_text(size = 15),axis.text = element_text(size=15),axis.title = element_text(size=15)) 
+graphics.off()#covid_plots(parms)
 
